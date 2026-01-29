@@ -1,0 +1,69 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-journal-minus me-2"></i>{{ title }}</h1>
+        {# --- ΠΡΟΣΘΗΚΗ ΤΟΥ ΚΟΥΜΠΙΟΥ ΕΔΩ --- #}
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'export_credit_notes_excel' %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Αρ. Πιστωτικού</th>
+                            <th>Ημερομηνία</th>
+                            <th>Πελάτης</th>
+                            <th>Αρχικό Τιμολόγιο</th>
+                            <th class="text-end">Συνολικό Ποσό</th>
+                            <th class="text-center">Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cn in credit_notes %}
+                        <tr class="searchable-row has-context-menu" data-id="{{ cn.pk }}" data-type="credit_note">
+                            <td>
+                                <a href="{% url 'credit_note_detail' cn.pk %}"><strong>{{ cn.credit_note_number|default:"[Μη Οριστικοποιημένο]" }}</strong></a>
+                            </td>
+                            <td>{{ cn.issue_date|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if cn.customer %}
+                                    <a href="{% url 'customer_detail' cn.customer.pk %}">{{ cn.customer }}</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cn.original_invoice %}
+                                    <a href="{% url 'invoice_detail' cn.original_invoice.pk %}">{{ cn.original_invoice.invoice_number }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold">{{ cn.total_amount|floatformat:2 }} €</td>
+                            <td class="text-center">
+                                <a href="{% url 'credit_note_detail' cn.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center p-4">Δεν βρέθηκαν πιστωτικά τιμολόγια.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if credit_notes.has_other_pages %}
+                {% include "core/partials/pagination_controls.html" with page_obj=credit_notes %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,355 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Δημιουργία Νέας Παραγγελίας{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .formset-row td { vertical-align: middle; padding: .3rem !important; }
+    .select2-container .select2-selection--single { height: calc(1.5em + .5rem + 2px); }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 1.5; }
+    .form-check-input { border: 1px solid #888; }
+    .select2-container { width: 100% !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h2 class="mt-4"><i class="bi bi-cart-plus-fill me-2"></i>Δημιουργία Νέας Παραγγελίας</h2>
+
+    <form method="post" id="order-form" class="dirty-check-form" novalidate>
+        {% csrf_token %}
+
+        {# --- ΕΜΦΑΝΙΣΗ ΓΕΝΙΚΩΝ ΣΦΑΛΜΑΤΩΝ --- #}
+        {% if form.non_field_errors or formset.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                {% for error in formset.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="card p-3 mb-3">
+             <legend class="card-title h5">Στοιχεία Παραγγελίας</legend>
+            <div class="row align-items-end">
+                <div class="col-md-5 mb-2">
+                    <label for="{{ form.customer_search.id_for_label }}" class="form-label form-label-sm">Πελάτης{% if form.customer.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.customer_search }}
+                    {{ form.customer }}
+                    {% for error in form.customer.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label for="{{ form.order_date.id_for_label }}" class="form-label form-label-sm">Ημερ. Παραγγελίας</label>
+                    {{ form.order_date }}
+                    {% for error in form.order_date.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label for="{{ form.delivery_date.id_for_label }}" class="form-label form-label-sm">Ημερ. Παράδοσης</label>
+                    {{ form.delivery_date }}
+                    {% for error in form.delivery_date.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="{{ form.status.id_for_label }}" class="form-label form-label-sm">Κατάσταση</label>
+                    {{ form.status }}
+                    {% for error in form.status.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3 mb-3">
+            <legend class="card-title h5">Στοιχεία Αποστολής & Διακίνησης</legend>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label for="{{ form.shipping_name.id_for_label }}" class="form-label form-label-sm">{{ form.shipping_name.label }}{% if form.shipping_name.field.required %}<span class="text-danger">*</span>{% endif %}:</label>
+                    {{ form.shipping_name }}
+                    {% for error in form.shipping_name.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label for="{{ form.shipping_address.id_for_label }}" class="form-label form-label-sm">{{ form.shipping_address.label }}{% if form.shipping_address.field.required %}<span class="text-danger">*</span>{% endif %}:</label>
+                    {{ form.shipping_address }}
+                    {% for error in form.shipping_address.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="{{ form.shipping_city.id_for_label }}" class="form-label form-label-sm">{{ form.shipping_city.label }}{% if form.shipping_city.field.required %}<span class="text-danger">*</span>{% endif %}:</label>
+                    {{ form.shipping_city }}
+                    {% for error in form.shipping_city.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="{{ form.shipping_postal_code.id_for_label }}" class="form-label form-label-sm">{{ form.shipping_postal_code.label }}{% if form.shipping_postal_code.field.required %}<span class="text-danger">*</span>{% endif %}:</label>
+                    {{ form.shipping_postal_code }}
+                    {% for error in form.shipping_postal_code.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <hr class="my-2">
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <label for="{{ form.purpose.id_for_label }}" class="form-label form-label-sm">Σκοπός Διακίνησης:</label>
+                    {{ form.purpose }}
+                    {% for error in form.purpose.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label for="{{ form.carrier.id_for_label }}" class="form-label form-label-sm">Μεταφορέας:</label>
+                    {{ form.carrier }}
+                    {% for error in form.carrier.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label for="{{ form.license_plate.id_for_label }}" class="form-label form-label-sm">Όχημα (Πινακίδα):</label>
+                    {{ form.license_plate }}
+                    {% for error in form.license_plate.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+             <hr class="my-2">
+             <div class="row">
+                <div class="col-md-12 mb-2">
+                     <label for="{{ form.comments.id_for_label }}" class="form-label form-label-sm">Σχόλια Παραγγελίας:</label>
+                    {{ form.comments }}
+                    {% for error in form.comments.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-3">
+            <h5 class="card-title">Είδη Παραγγελίας</h5>
+            {{ formset.management_form }}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Προϊόν</th>
+                            <th style="width: 20%;">Σχόλια</th>
+                            <th class="text-center" style="width: 8%;">Ποσότητα</th>
+                            <th class="text-center" style="width: 8%;">Δώρο</th>
+                            <th class="text-center" style="width: 10%;">Τιμή Μον.</th>
+                            <th class="text-center" style="width: 8%;">Έκπτ. %</th>
+                            <th class="text-center" style="width: 8%;">ΦΠΑ %</th>
+                            <th style="width: 12%;" class="text-end">Τελικό Σύνολο</th>
+                            <th class="text-center">Διαγραφή</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-items-container">
+                    {% for item_form in formset %}
+                        <tr class="formset-row">
+                            {{ item_form.id }}
+                            <td>
+                                {{ item_form.product_search }}{{ item_form.product }}
+                                {% for error in item_form.product.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                                {% for error in item_form.product_search.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                            </td>
+                            <td>{{ item_form.comments }}</td>
+                            <td>
+                                {{ item_form.quantity }}
+                                {% for error in item_form.quantity.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                            </td>
+                            <td><div class="form-check form-switch d-flex justify-content-center">{{ item_form.is_gift }}</div></td>
+                            <td>{{ item_form.unit_price }}</td>
+                            <td>{{ item_form.discount_percentage }}</td>
+                            <td>{{ item_form.vat_percentage }}</td>
+                            <td class="item-total-price text-end fw-bold">0.00 €</td>
+                            <td class="text-center">{% if formset.can_delete %}<div class="form-check d-flex justify-content-center">{{ item_form.DELETE }}</div>{% endif %}</td>
+                        </tr>
+                        {% if item_form.non_field_errors %}
+                        <tr class="formset-error-row">
+                            <td colspan="9"><div class="alert alert-danger p-1 small">{{ item_form.non_field_errors }}</div></td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn btn-outline-success btn-sm align-self-start mt-2" id="add-item">➕ Προσθήκη Γραμμής</button>
+        </div>
+
+        <div class="row justify-content-end mt-3">
+            <div class="col-md-5">
+                <div class="card p-3">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="text-muted">Καθαρή Αξία:</h6>
+                        <h6 id="subtotal-display">0.00 €</h6>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <h6 class="text-muted">Φ.Π.Α.:</h6>
+                        <h6 id="vat-display">0.00 €</h6>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <h4 class="fw-bold">Συνολικό Ποσό:</h4>
+                        <h4 class="fw-bold" id="total-display">0.00 €</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg mt-3">Αποθήκευση Παραγγελίας</button>
+    </form>
+
+    <table class="d-none"><tbody id="empty-form-template">
+        <tr class="formset-row">
+            {{ formset.empty_form.id }}
+            <td>{{ formset.empty_form.product_search }}{{ formset.empty_form.product }}</td>
+            <td>{{ formset.empty_form.comments }}</td>
+            <td>{{ formset.empty_form.quantity }}</td>
+            <td><div class="form-check form-switch d-flex justify-content-center">{{ formset.empty_form.is_gift }}</div></td>
+            <td>{{ formset.empty_form.unit_price }}</td>
+            <td>{{ formset.empty_form.discount_percentage }}</td>
+            <td>{{ formset.empty_form.vat_percentage }}</td>
+            <td class="item-total-price text-end fw-bold">0.00 €</td>
+            <td class="text-center">{% if formset.can_delete %}<div class="form-check d-flex justify-content-center">{{ formset.empty_form.DELETE }}</div>{% endif %}</td>
+        </tr>
+    </tbody></table>
+</div>
+{% endblock content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    function calculateTotals() {
+        let subtotal = 0, totalVat = 0;
+        $('#order-items-container tr.formset-row').each(function() {
+            const row = $(this);
+            if (row.find('input[name$="-DELETE"]:checked').length > 0) {
+                row.addClass('opacity-50 text-decoration-line-through');
+                row.find('.item-total-price').text('0.00 €');
+                return;
+            }
+            row.removeClass('opacity-50 text-decoration-line-through');
+            const quantity = parseFloat(row.find('input[name$="-quantity"]').val()) || 0;
+            const price = parseFloat(row.find('input[name$="-unit_price"]').val()) || 0;
+            const discount = parseFloat(row.find('input[name$="-discount_percentage"]').val()) || 0;
+            const vatPerc = parseFloat(row.find('input[name$="-vat_percentage"]').val()) || 0;
+            const priceAfterDiscount = price * (1 - (discount / 100));
+            const itemSubtotal = quantity * priceAfterDiscount;
+            const itemVat = itemSubtotal * (vatPerc / 100);
+            subtotal += itemSubtotal;
+            totalVat += itemVat;
+            row.find('.item-total-price').text((itemSubtotal + itemVat).toFixed(2) + ' €');
+        });
+        $('#subtotal-display').text(subtotal.toFixed(2) + ' €');
+        $('#vat-display').text(totalVat.toFixed(2) + ' €');
+        $('#total-display').text((subtotal + totalVat).toFixed(2) + ' €');
+    }
+
+    function initializeRow(rowElement) {
+        $(rowElement).find('input[type="number"], input[type="checkbox"]').on('change keyup', calculateTotals);
+        const priceInput = $(rowElement).find('input[name$="-unit_price"]');
+        priceInput.attr('data-original-price', priceInput.val());
+        $(rowElement).find('input[name$="-is_gift"]').on('change', function() {
+            const discountInput = $(this).closest('.formset-row').find('input[name$="-discount_percentage"]');
+            if (this.checked) { priceInput.val('0.00').prop('readonly', true); discountInput.val('0.00').prop('readonly', true); } 
+            else { priceInput.val(priceInput.attr('data-original-price') || '0.00').prop('readonly', false); discountInput.prop('readonly', false); }
+            calculateTotals();
+        }).trigger('change');
+
+        const productSearchInput = $(rowElement).find('input[name$="-product_search"]');
+        productSearchInput.select2({
+            placeholder: 'Αναζήτηση προϊόντος...',
+            width: '100%',
+            ajax: { url: "{% url 'search_products_ajax' %}", dataType: 'json', delay: 250, data: p => ({ q: p.term }), processResults: d => ({ results: d.results }) }
+        }).on('select2:select', function(e) {
+            const data = e.params.data;
+            const row = $(this).closest('.formset-row');
+            row.find('input[name$="-product"]').val(data.id);
+            row.find('input[name$="-unit_price"]').val(data.price.toFixed(2)).attr('data-original-price', data.price.toFixed(2));
+            row.find('input[name$="-vat_percentage"]').val(data.vat.toFixed(0));
+            const quantityInput = row.find('input[name$="-quantity"]');
+            if (data.unit_key === 'pcs') { quantityInput.attr('step', '1'); if (quantityInput.val()) quantityInput.val(Math.round(quantityInput.val())); } else { quantityInput.attr('step', '0.01'); }
+            var option = new Option(data.text, data.id, true, true);
+            $(this).empty().append(option).trigger('change');
+            calculateTotals();
+        });
+
+        const initialProductId = $(rowElement).find('input[name$="-product"]').val();
+        if (initialProductId) {
+            $.ajax({
+                type: 'GET', url: "{% url 'search_products_ajax' %}", data: { 'initial_id': initialProductId },
+                success: function(data) {
+                    if (data.results && data.results.length > 0) {
+                        var productData = data.results[0];
+                        var option = new Option(productData.text, productData.id, true, true);
+                        productSearchInput.append(option).trigger('change');
+                        const quantityInput = $(rowElement).find('input[name$="-quantity"]');
+                        if (productData.unit_key === 'pcs') { quantityInput.attr('step', '1'); } else { quantityInput.attr('step', '0.01'); }
+                    }
+                }
+            });
+        }
+    }
+
+    const orderItemsContainer = $('#order-items-container');
+    $('#add-item').on('click', function() {
+        let formIdx = parseInt($('#id_items-TOTAL_FORMS').val());
+        let newForm = $('#empty-form-template').html().replace(/__prefix__/g, formIdx);
+        orderItemsContainer.append(newForm);
+        initializeRow(orderItemsContainer.find('.formset-row').last());
+        $('#id_items-TOTAL_FORMS').val(formIdx + 1);
+    });
+    orderItemsContainer.find('.formset-row').each(function() { initializeRow(this); });
+
+    // --- ΟΛΟΚΛΗΡΩΜΕΝΗ & ΔΙΟΡΘΩΜΕΝΗ ΛΟΓΙΚΗ ΓΙΑ ΤΟΝ ΠΕΛΑΤΗ ---
+    const customerSearch = $('#id_customer_search');
+    const shippingFields = $('#id_shipping_name, #id_shipping_address, #id_shipping_city, #id_shipping_postal_code');
+
+    customerSearch.select2({
+        placeholder: 'Αναζήτηση πελάτη...', width: '100%',
+        ajax: { 
+            url: "{% url 'search_customers_ajax' %}", 
+            dataType: 'json', 
+            delay: 250, 
+            data: p => ({ q: p.term }), 
+            processResults: d => ({ results: d.results }) 
+        }
+    }).on('select2:select', function(e) {
+        // Η search_customers_ajax επιστρέφει ήδη ΟΛΑ τα στοιχεία που χρειαζόμαστε.
+        // Δεν χρειάζεται δεύτερη κλήση AJAX.
+        var data = e.params.data;
+        
+        // Δημιουργούμε το option για να εμφανιστεί η επιλογή
+        var option = new Option(data.text, data.id, true, true);
+        $(this).empty().append(option).trigger('change');
+        
+        // Ενημερώνουμε το κρυφό πεδίο του πελάτη
+        $('#id_customer').val(data.id);
+        
+        // Γεμίζουμε τα πεδία αποστολής απευθείας από το 'data' object
+        $('#id_shipping_name').val(data.shipping_name || '');
+        $('#id_shipping_address').val(data.shipping_address || '');
+        $('#id_shipping_city').val(data.shipping_city || '');
+        $('#id_shipping_postal_code').val(data.shipping_postal_code || '');
+
+    }).on('select2:unselect', function(e) {
+        // Όταν ο χρήστης καθαρίζει την επιλογή
+        $('#id_customer').val('');
+        shippingFields.val('');
+    });
+
+    // Λογική για την αρχικοποίηση του πεδίου αν υπάρχει ήδη πελάτης (π.χ. από GET parameter)
+    const initialCustomerId = "{{ form.customer.value|default_if_none:'' }}";
+    if (initialCustomerId) {
+        // Κάνουμε κλήση στο ίδιο AJAX endpoint που χρησιμοποιεί και η αναζήτηση
+        $.ajax({
+            type: 'GET',
+            url: "{% url 'search_customers_ajax' %}",
+            data: { 'initial_id': initialCustomerId }
+        }).then(function (data) {
+            if (data.results && data.results.length > 0) {
+                var customerData = data.results[0];
+                // Πυροδοτούμε το 'select2:select' για να εκτελεστεί η παραπάνω λογική
+                // και να γεμίσουν αυτόματα ΟΛΑ τα πεδία.
+                customerSearch.trigger({
+                    type: 'select2:select',
+                    params: { data: customerData }
+                });
+            }
+        });
+    }
+    // --- ΤΕΛΟΣ ΔΙΟΡΘΩΜΕΝΗΣ ΛΟΓΙΚΗΣ ---
+    
+    calculateTotals();
+});
+</script>
+{% endblock extra_js %}

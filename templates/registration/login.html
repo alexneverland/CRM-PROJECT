@@ -1,0 +1,51 @@
+{% extends 'core/base.html' %} {# Κληρονομεί από το βασικό σου template #}
+
+{% block title %}Είσοδος Χρήστη{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Είσοδος Χρήστη</h2>
+                </div>
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <p>Το όνομα χρήστη και ο κωδικός πρόσβασης δεν ταιριάζουν. Παρακαλώ προσπαθήστε ξανά.</p>
+                        </div>
+                    {% endif %}
+
+                    {% if next %}
+                        {% if user.is_authenticated %}
+                            <div class="alert alert-warning">
+                                <p>Ο λογαριασμός σας δεν έχει πρόσβαση σε αυτή τη σελίδα. Για να συνεχίσετε,
+                                παρακαλώ συνδεθείτε με έναν λογαριασμό που έχει πρόσβαση.</p>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                 <p>Παρακαλώ συνδεθείτε για να δείτε αυτή τη σελίδα.</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <form method="post" action="{% url 'login' %}">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary w-100">Είσοδος</button> {# Έκανα το κουμπί full-width, μπορείς να το αλλάξεις αν θέλεις #}
+                        <input type="hidden" name="next" value="{{ next }}">
+                    </form>
+
+                    {# --- ΠΡΟΣΘΗΚΗ ΣΥΝΔΕΣΜΟΥ ΓΙΑ ΕΠΑΝΑΦΟΡΑ ΚΩΔΙΚΟΥ --- #}
+                    <hr class="my-3"> {# Προαιρετικός οριζόντιος διαχωριστής #}
+                    <div class="text-center">
+                        <a href="{% url 'password_reset' %}">Ξεχάσατε τον κωδικό σας;</a>
+                    </div>
+                    {# --- ΤΕΛΟΣ ΠΡΟΣΘΗΚΗΣ --- #}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

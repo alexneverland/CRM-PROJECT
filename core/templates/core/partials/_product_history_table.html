@@ -1,0 +1,30 @@
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Ημερομηνία</th>
+                <th>Τύπος Κίνησης</th>
+                <th class="text-center">Ποσότητα</th>
+                <th>Παραστατικό</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in history_log %}
+            <tr>
+                <td>{{ entry.date|date:"d/m/Y" }}</td>
+                <td>
+                    <span class="badge {% if entry.type == 'Πώληση' %}bg-danger{% elif entry.type == 'Επιστροφή' %}bg-success{% else %}bg-primary{% endif %}">
+                        {{ entry.type }}
+                    </span>
+                </td>
+                <td class="text-center fw-bold">{{ entry.quantity|floatformat:2 }}</td>
+                <td>
+                    <a href="{% url entry.url_name entry.document.pk %}">{{ entry.document_number }}</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center">Δεν υπάρχουν κινήσεις για αυτό το προϊόν.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

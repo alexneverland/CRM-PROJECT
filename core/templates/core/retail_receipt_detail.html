@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-receipt me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar">
+            <a href="{% url 'retail_receipt_pdf' receipt.pk %}" class="btn btn-sm btn-info" target="_blank"><i class="bi bi-printer"></i> Εκτύπωση</a>
+            <a href="{% url 'retail_receipt_list' %}" class="btn btn-sm btn-outline-secondary ms-2">Επιστροφή στη Λίστα</a>
+        </div>
+    </div>
+    <p><strong>Ημερομηνία:</strong> {{ receipt.issue_date|date:"d/m/Y H:i" }}</p>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Περιγραφή</th>
+                    <th class="text-center">Ποσότητα</th>
+                    <th class="text-end">Τιμή Μον.</th>
+                    <th class="text-center">Έκπτ. %</th>
+                    <th class="text-end">Καθαρή Αξία</th>
+                    <th class="text-end">ΦΠΑ</th>
+                    <th class="text-end">Τελική Αξία</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in receipt.items.all %}
+                <tr>
+                    <td>{{ item.description }}</td>
+                    <td class="text-center">{{ item.quantity|floatformat:"-2" }}</td>
+                    <td class="text-end">{{ item.unit_price|floatformat:2 }} €</td>
+                    <td class="text-center">{{ item.discount_percentage|floatformat:"-0" }}%</td>
+                    <td class="text-end">{{ item.subtotal|floatformat:2 }} €</td>
+                    <td class="text-end">{{ item.vat_amount|floatformat:2 }} €</td>
+                    <td class="text-end fw-bold">{{ item.final_price|floatformat:2 }} €</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-group-divider">
+                    <td colspan="4" class="text-end">Καθαρή Αξία:</td>
+                    <td class="text-end fw-bold">{{ receipt.subtotal|floatformat:2 }} €</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end">Σύνολο ΦΠΑ:</td>
+                    <td class="text-end fw-bold">{{ receipt.vat_amount|floatformat:2 }} €</td>
+                </tr>
+                <tr class="table-light">
+                    <td colspan="4" class="text-end fw-bolder">Γενικό Σύνολο:</td>
+                    <td class="text-end fw-bolder h5 mb-0">{{ receipt.total_amount|floatformat:2 }} €</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

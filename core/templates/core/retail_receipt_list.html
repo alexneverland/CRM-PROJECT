@@ -1,0 +1,75 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-receipt me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'retail_pos' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Νέα Πώληση Λιανικής
+            </a>
+            <a href="{% url 'export_retail_receipts_excel' %}" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+        </a>
+        </div>
+    </div>
+
+    {% if receipts %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Αρ. Απόδειξης</th>
+                                <th>Ημερομηνία</th>
+                                <th>Πελάτης</th>
+                                <th class="text-end">Καθαρή Αξία</th>
+                                <th class="text-end">ΦΠΑ</th>
+                                <th class="text-end">Τελικό Ποσό</th>
+                                <th class="text-center" style="width: 10%;">Ενέργειες</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in receipts %}
+                                <tr class="searchable-row">
+                                    <td>
+                                        <a href="{% url 'retail_receipt_detail' receipt.pk %}"><strong>{{ receipt.receipt_number }}</strong></a>
+                                    </td>
+                                    <td>{{ receipt.issue_date|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ receipt.customer }}</td>
+                                    <td class="text-end">{{ receipt.subtotal|floatformat:2 }} €</td>
+                                    <td class="text-end">{{ receipt.vat_amount|floatformat:2 }} €</td>
+                                    <td class="text-end fw-bold">{{ receipt.total_amount|floatformat:2 }} €</td>
+                                    <td class="text-center">
+                                        <a href="{% url 'retail_receipt_detail' receipt.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a>
+                                        <form action="{% url 'retail_receipt_delete' receipt.pk %}" method="post" class="delete-form d-inline ms-1" 
+                                            data-item-type="την απόδειξη λιανικής" 
+                                            data-item-name="'{{ receipt.receipt_number }}'">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Διαγραφή">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if receipts.has_other_pages %}
+                    {% include "core/partials/pagination_controls.html" with page_obj=receipts %}
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Δεν υπάρχουν καταχωρημένες αποδείξεις λιανικής.
+        </div>
+    {% endif %}
+</div>
+{% endblock content %}

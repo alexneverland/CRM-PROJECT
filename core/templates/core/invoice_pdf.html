@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Τιμολόγιο - {{ invoice.invoice_number }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #333; }
+        h1 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; font-size: 16pt; margin-bottom: 0; }
+        .header-grid, .details-grid { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .header-grid td, .details-grid td { width: 50%; vertical-align: top; padding: 5px; }
+        .details-grid td { padding: 10px; border: 1px solid #ddd; }
+        .label { font-weight: bold; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .items-table th, .items-table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+        .items-table th { background-color: #e9e9e9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .summary-section { margin-top: 20px; page-break-inside: avoid; }
+        .summary-table { float: right; width: 45%; border-collapse: collapse; }
+        .summary-table td { padding: 4px; }
+        .summary-table .total-label { font-weight: bold; }
+        .grand-total td { font-size: 14pt; font-weight: bold; border-top: 2px solid #000; padding-top: 5px; }
+        .clear { clear: both; }
+        .mydata-section { text-align: right; font-size: 8pt; color: #555; height: 90px; }
+        p { margin: 3px 0; }
+    </style>
+</head>
+<body>
+    <h1>
+        {% if invoice.delivery_note %}
+            ΤΙΜΟΛΟΓΙΟ ΠΩΛΗΣΗΣ
+        {% else %}
+            ΤΙΜΟΛΟΓΙΟ - ΔΕΛΤΙΟ ΑΠΟΣΤΟΛΗΣ
+        {% endif %}
+    </h1>
+    
+    {% if invoice.mark or invoice.qr_code_url %}
+    <div class="mydata-section">
+        {% if invoice.mark %}<p>ΜΑΡΚ: {{ invoice.mark }}</p>{% endif %}
+        {% if invoice.qr_code_url %}<img src="{{ invoice.qr_code_url }}" alt="QR Code" style="width: 80px; height: 80px;">{% endif %}
+    </div>
+    {% endif %}
+    
+    <table class="header-grid">
+        <tr>
+            <td>
+                <p><span class="label">{{ company_info.NAME|default:'Η Εταιρεία σας' }}</span></p>
+                <p>{{ company_info.ADDRESS|default:'Η Διεύθυνσή σας' }}</p>
+                <p><span class="label">Α.Φ.Μ.:</span> {{ company_info.VAT_NUMBER|default:'' }}</p>
+            </td>
+            <td class="text-right">
+                <p><span class="label">Αρ. Τιμολογίου:</span> {{ invoice.invoice_number }}</p>
+                <p><span class="label">Ημερομηνία:</span> {{ invoice.issue_date|date:"d/m/Y" }}</p>
+                
+                {# --- ΝΕΑ ΠΡΟΣΘΗΚΗ: Εμφάνιση Σχετικών Παραστατικών --- #}
+                {% if invoice.delivery_note %}
+                    <p><span class="label">Σχετ. Δ.Α.:</span> {{ invoice.delivery_note.delivery_note_number }}</p>
+                    {% if invoice.delivery_note.order %}
+                    <p><span class="label">Σχετ. Παραγγελία:</span> {{ invoice.delivery_note.order.order_number }}</p>
+                    {% endif %}
+                {% elif invoice.order %}
+                    <p><span class="label">Σχετ. Παραγγελία:</span> {{ invoice.order.order_number }}</p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <table class="details-grid">
+        <tr>
+            <td {% if invoice.delivery_note %}colspan="2"{% endif %}>
+                <p><span class="label">ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ (ΧΡΕΩΣΗ)</span></p>
+                <p>{{ invoice.customer }}</p>
+                <p>{{ invoice.customer.address|default:'' }}, {{ invoice.customer.city|default:'' }}</p>
+                <p><span class="label">Α.Φ.Μ.:</span> {{ invoice.customer.vat_number|default:'-' }}</p>
+            </td>
+            {% if not invoice.delivery_note %}
+                <td>
+                    <p><span class="label">ΣΤΟΙΧΕΙΑ ΠΑΡΑΛΗΠΤΗ (ΑΠΟΣΤΟΛΗ)</span></p>
+                    <p>{{ invoice.shipping_name|default:'-' }}</p>
+                    <p>{{ invoice.shipping_address|default:'' }}, {{ invoice.shipping_city|default:'' }}</p>
+                    <p><span class="label">Α.Φ.Μ.:</span> {{ invoice.shipping_vat_number|default:'-' }}</p>
+                </td>
+            {% endif %}
+        </tr>
+        {% if not invoice.delivery_note %}
+        <tr>
+            <td colspan="2" style="border-top: none; padding-top: 15px;">
+                <p><span class="label">Στοιχεία Διακίνησης:</span> 
+                    Σκοπός: {{ invoice.get_purpose_display|default:'-' }} | 
+                    Μεταφορέας: {{ invoice.carrier|default:'-' }} | 
+                    Όχημα: {{ invoice.license_plate|default:'-' }}
+                </p>
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width:45%;">Περιγραφή</th>
+                <th class="text-center">Ποσότητα</th>
+                <th class="text-right">Τιμή Μον.</th>
+                <th class="text-center">Έκπτ. %</th>
+                <th class="text-right">Αξία (προ ΦΠΑ)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                <td class="text-right">{{ item.unit_price|floatformat:2 }} €</td>
+                <td class="text-center">{% if not item.is_gift and item.discount_percentage > 0 %}{{ item.discount_percentage|floatformat:2 }}%{% else %}-{% endif %}</td>
+                <td class="text-right">{{ item.total_price|floatformat:2 }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary-section">
+        <table class="summary-table">
+            <tr><td>Καθαρή Αξία:</td><td class="text-right">{{ invoice.subtotal|floatformat:2 }} €</td></tr>
+            {% if invoice.discount_amount > 0 %}
+            <tr><td>Έκπτωση ({{ invoice.discount_percentage|floatformat:2 }}%):</td><td class="text-right">- {{ invoice.discount_amount|floatformat:2 }} €</td></tr>
+            {% endif %}
+            <tr><td>Σύνολο ΦΠΑ:</td><td class="text-right">{{ invoice.vat_amount|floatformat:2 }} €</td></tr>
+            <tr class="grand-total"><td class="total-label">Γενικό Σύνολο:</td><td class="text-right">{{ invoice.total_amount|floatformat:2 }} €</td></tr>
+        </table>
+        <div class="clear"></div>
+    </div>
+</body>
+</html>

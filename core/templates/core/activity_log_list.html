@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4"><i class="bi bi-journals me-2"></i>{{ title }}</h1>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="bi bi-filter me-1"></i> Φίλτρα Αναζήτησης
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'activity_log_list' %}" class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label for="user_filter_input" class="form-label">Χρήστης (username):</label>
+                    <input type="text" name="user_filter" id="user_filter_input" value="{{ user_filter_value|default:'' }}" class="form-control form-control-sm" placeholder="π.χ. lazaros">
+                </div>
+                <div class="col-md-4">
+                    <label for="action_type_filter_select" class="form-label">Τύπος Ενέργειας:</label>
+                    <select name="action_type_filter" id="action_type_filter_select" class="form-select form-select-sm">
+                        <option value="">Όλοι οι τύποι</option>
+                        {% for value, display_text in ACTION_TYPE_CHOICES %}
+                            <option value="{{ value }}" {% if action_type_filter_value == value %}selected{% endif %}>
+                                {{ display_text }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 align-self-end">
+                    <button type="submit" class="btn btn-outline-primary w-100 btn-sm">Εφαρμογή Φίλτρων</button>
+                </div>
+                <div class="col-md-2 align-self-end">
+                    {% if user_filter_value or action_type_filter_value %}
+                        <a href="{% url 'activity_log_list' %}" class="btn btn-outline-secondary w-100 btn-sm">Καθαρισμός</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if log_entries %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-table me-1"></i>
+                Καταγραφές Ενεργειών
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" style="width: 15%;">Ημερομηνία & Ώρα</th>
+                                <th scope="col" style="width: 15%;">Χρήστης</th>
+                                <th scope="col" style="width: 15%;">Τύπος Ενέργειας</th>
+                                <th scope="col" style="width: 25%;">Αντικείμενο</th>
+                                <th scope="col">Λεπτομέρειες</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in log_entries %}
+                                <tr>
+                                    <td>{{ entry.action_time|date:"d/m/Y H:i:s" }}</td>
+                                    <td>{{ entry.user.username|default:"Σύστημα/Άγνωστος" }}</td>
+                                    <td>{{ entry.get_action_type_display }}</td>
+                                    <td>
+                                        {% if entry.linked_object %}
+                                            {{ entry.object_repr|default:"N/A" }}
+                                            <small class="text-muted d-block">({{ entry.content_type.name|default:'' }} ID: {{ entry.object_id }})</small>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ entry.details|default:"-" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% include "core/partials/pagination_controls.html" with page_obj=log_entries %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Δεν υπάρχουν καταγραφές ενεργειών{% if user_filter_value or action_type_filter_value %} για τα επιλεγμένα κριτήρια{% endif %}.
+        </div>
+    {% endif %}
+</div>
+{% endblock content %}

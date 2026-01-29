@@ -1,0 +1,140 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Παραγγελία: {{ order.order_number }}{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-receipt-cutoff me-2"></i>Καρτέλα Παραγγελίας: {{ order.order_number }}</h1>
+    </div>
+
+    <div class="card p-3 mb-3">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Πελάτης:</strong> 
+                    {% if order.customer %}
+                        <a href="{% url 'customer_detail' order.customer.pk %}">{{ order.customer }}</a>
+                    {% else %}
+                        [Διαγραμμένος Πελάτης]
+                    {% endif %}
+                </p>
+                <p><strong>Ημερομηνία Παραγγελίας:</strong> {{ order.order_date|date:"d/m/Y" }}</p>
+                <p><strong>Κατάσταση:</strong> 
+                    <span class="badge 
+                        {% if order.status == order.STATUS_COMPLETED %}bg-success
+                        {% elif order.status == order.STATUS_PENDING %}bg-warning text-dark
+                        {% elif order.status == order.STATUS_PROCESSING %}bg-primary
+                        {% elif order.status == order.STATUS_CANCELLED %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Σκοπός Διακίνησης:</strong> {{ order.get_purpose_display|default:"-" }}</p>
+                <p><strong>Μεταφορέας:</strong> {{ order.carrier|default:"-" }}</p>
+                <p><strong>Όχημα (Πινακίδα):</strong> {{ order.license_plate|default:"-" }}</p>
+            </div>
+        </div>
+        {% if order.comments %}
+            <hr>
+            <p><strong>Σχόλια:</strong> {{ order.comments|linebreaksbr }}</p>
+        {% endif %}
+    </div>
+
+    <h3>Είδη Παραγγελίας:</h3>
+    {% if order_items %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mt-3">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Προϊόν</th>
+                        <th scope="col" class="text-center">Ποσότητα</th>
+                        <th scope="col" class="text-end">Τιμή Μονάδας</th>
+                        <th scope="col" class="text-end">Σύνολο Είδους</th>
+                        <th scope="col">Σχόλια</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                        <tr>
+                            <td>
+                                {% if item.product %}
+                                    <a href="{% url 'product_detail' item.product.pk %}">{{ item.product.name }} ({{ item.product.code }})</a>
+                                {% else %}
+                                    [Διαγραμμένο Προϊόν]
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                            <td class="text-end">{{ item.unit_price|default:"0.00" }} €</td>
+                            <td class="text-end">{{ item.total_price|default:"0.00" }} €</td>
+                            <td>{{ item.comments|default:"-" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-group-divider">
+                        <td colspan="3" class="text-end fw-bold">Σύνολο Παραγγελίας:</td>
+                        <td class="text-end fw-bold h5 mb-0">{{ order.total_amount|default:"0.00" }} €</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            Δεν υπάρχουν είδη σε αυτή την παραγγελία.
+        </div>
+    {% endif %}
+
+    <div class="detail-actions mt-4">
+    
+        {# --- Κουμπί Επεξεργασίας (Χρησιμοποιεί τη μεταβλητή από τη view) --- #}
+        {% if is_order_editable %}
+            <a href="{% url 'order_edit' order.pk %}" class="btn btn-primary">✏️ Επεξεργασία Παραγγελίας</a>
+        {% else %}
+            <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="Η παραγγελία είναι κλειδωμένη μετά την έκδοση παραστατικών.">
+                <a href="#" class="btn btn-primary disabled" aria-disabled="true">✏️ Επεξεργασία Παραγγελίας</a>
+            </span>
+        {% endif %}
+
+        <a href="{% url 'view_order_pdf' order.pk %}" class="btn btn-info ms-2" target="_blank">
+            <i class="bi bi-printer"></i> Εκτύπωση / PDF
+        </a>
+
+        {# --- Κουμπί για Δελτίο Αποστολής (ΣΩΣΤΗ ΛΟΓΙΚΗ) --- #}
+        {% if can_create_delivery_note %}
+            <form action="{% url 'create_delivery_note_from_order' order.pk %}" method="post" class="d-inline ms-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary"><i class="bi bi-truck"></i> Έκδοση Δ. Αποστολής</button>
+            </form>
+        {% else %}
+            {% with last_dn=order.delivery_notes.last %}
+                {% if last_dn and last_dn.status != 'CANCELLED' %}
+                    <a href="{% url 'delivery_note_detail' last_dn.pk %}" class="btn btn-outline-secondary ms-2"><i class="bi bi-check-circle"></i> Προβολή Δ.Α.</a>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+        
+        {# --- Κουμπί για Τιμολόγιο --- #}
+        {% if order.status == order.STATUS_COMPLETED %}
+            {% if order.invoice %}
+                <a href="{% url 'invoice_detail' order.invoice.pk %}" class="btn btn-info ms-2"><i class="bi bi-check-circle"></i> Προβολή Τιμολογίου</a>
+            {% elif order.customer.is_branch %}
+                <span class="d-inline-block ms-2" tabindex="0" data-bs-toggle="tooltip" title="Η τιμολόγηση για υποκαταστήματα γίνεται από το Δελτίο Αποστολής.">
+                    <button type="button" class="btn btn-success disabled"><i class="bi bi-file-earmark-text-fill"></i> Έκδοση Τιμολογίου</button>
+                </span>
+            {% else %}
+                <form action="{% url 'order_create_invoice' order.pk %}" method="post" class="d-inline ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success"><i class="bi bi-file-earmark-text-fill"></i> Έκδοση Τιμολογίου</button>
+                </form>
+            {% endif %}
+        {% endif %}
+        
+        <a href="{% url 'order_list' %}" class="btn btn-secondary ms-2">Επιστροφή στις Παραγγελίες</a>
+    </div>
+</div>
+{% endblock content %}

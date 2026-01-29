@@ -1,0 +1,249 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Λίστα Παραγγελιών{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single {
+        height: calc(1.5em + .5rem + 2px);
+        padding: .25rem .5rem;
+        font-size: .875rem;
+        border-radius: .2rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 1.5; padding-left: 0; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .5rem); }
+    .status-tabs .nav-link {
+        color: #0d6efd;
+        border: 1px solid transparent;
+        border-bottom: 3px solid transparent;
+        padding: 0.5rem 1rem;
+    }
+    .status-tabs .nav-link.active {
+        color: #0a58ca;
+        border-color: #dee2e6 #dee2e6 #0a58ca;
+        font-weight: bold;
+    }
+    .order-list-item {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: .375rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: box-shadow .15s ease-in-out;
+    }
+    .order-list-item:hover {
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-receipt-cutoff me-2"></i>Λίστα Παραγγελιών</h1>
+        <div>
+            <a href="{% url 'order_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Προσθήκη Νέας Παραγγελίας
+            </a>
+            <a href="{% url 'export_orders_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+            </a>
+        </div>
+    </div>
+    
+    <ul class="nav nav-tabs mb-3 status-tabs">
+        <li class="nav-item">
+            <a class="nav-link {% if not status_filter %}active{% endif %}" href="?q={{ request.GET.q|default:'' }}&customer_filter={{ request.GET.customer_filter|default:'' }}&delivery_note={{ request.GET.delivery_note|default:'' }}&invoiced={{ request.GET.invoiced|default:'' }}&date_from={{ request.GET.date_from|default:'' }}&date_to={{ request.GET.date_to|default:'' }}&status=">Όλες</a>
+        </li>
+        {% for code, display in ORDER_STATUS_CHOICES %}
+            <li class="nav-item">
+                <a class="nav-link {% if status_filter == code %}active{% endif %}" href="?q={{ request.GET.q|default:'' }}&customer_filter={{ request.GET.customer_filter|default:'' }}&delivery_note={{ request.GET.delivery_note|default:'' }}&invoiced={{ request.GET.invoiced|default:'' }}&date_from={{ request.GET.date_from|default:'' }}&date_to={{ request.GET.date_to|default:'' }}&status={{ code }}">{{ display }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-filter me-1"></i>Πρόσθετα Φίλτρα</div>
+        <div class="card-body">
+            <form method="get" action="{% url 'order_list' %}">
+                <input type="hidden" name="status" value="{{ status_filter|default:'' }}">
+                
+                <div class="row g-2 align-items-end">
+                     <div class="col-md-3">
+                        <label for="q_filter" class="form-label form-label-sm">Αναζήτηση (Αρ. Παρ./Πελάτης):</label>
+                        <input type="text" name="q" id="q_filter" value="{{ query|default:'' }}" class="form-control form-control-sm" placeholder="Αριθμός, Όνομα, Κωδικός Πελάτη...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="customer_filter" class="form-label form-label-sm">Πελάτης:</label>
+                        <select name="customer_filter" id="customer_filter" class="form-select form-select-sm select2-filter-customer">
+                            <option value="">Όλοι οι πελάτες</option>
+                            {% for customer in customers_for_filter %}
+                                <option value="{{ customer.pk }}" {% if customer_filter_id == customer.pk|stringformat:"s" %}selected{% endif %}>{{ customer }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="delivery_note_filter" class="form-label form-label-sm">Έχει Δ.Α.;</label>
+                        <select name="delivery_note" id="delivery_note_filter" class="form-select form-select-sm">
+                            <option value="">Όλα</option>
+                            <option value="yes" {% if delivery_note_filter == 'yes' %}selected{% endif %}>Ναι</option>
+                            <option value="no" {% if delivery_note_filter == 'no' %}selected{% endif %}>Όχι</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="invoiced_filter" class="form-label form-label-sm">Έχει Τιμολογηθεί;</label>
+                        <select name="invoiced" id="invoiced_filter" class="form-select form-select-sm">
+                            <option value="">Όλα</option>
+                            <option value="yes" {% if invoiced_filter == 'yes' %}selected{% endif %}>Ναι</option>
+                            <option value="no" {% if invoiced_filter == 'no' %}selected{% endif %}>Όχι</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label form-label-sm fw-bold">Γρήγορες Επιλογές Ημερομηνίας Παραγγελίας:</label>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group">
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="today">Σήμερα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_week">Αυτή την Εβδομάδα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_month">Αυτόν τον Μήνα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="last_month">Προηγ. Μήνα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_year">Αυτό το Έτος</button>
+                    </div>
+                </div>
+
+                <div class="row g-2 align-items-end mt-1">
+                    <div class="col-md-4">
+                        <label for="date_from" class="form-label form-label-sm">Ημερομ. Από:</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ date_from_value|default:'' }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date_to" class="form-label form-label-sm">Ημερομ. Έως:</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ date_to_value|default:'' }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button type="submit" class="btn btn-primary btn-sm">Αναζήτηση</button>
+                        <a href="{% url 'order_list' %}" class="btn btn-outline-secondary btn-sm">Καθαρισμός</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="order-list-container mt-4">
+    {% for order in orders %}
+        <div class="order-list-item searchable-row has-context-menu" data-id="{{ order.pk }}" data-type="order">
+            <div class="order-info">
+                <strong><a href="{% url 'order_detail' order.pk %}">{{ order.order_number }}</a></strong>
+
+                <div class="mt-1">
+                    {% with last_dn=order.delivery_notes.last %}
+                        {% if last_dn and last_dn.status != 'CANCELLED' %}
+                            <span class="badge bg-secondary" title="Έχει εκδοθεί Δ.Α."><i class="bi bi-truck"></i> Δ.Α.</span>
+                        {% endif %}
+                        {% if order.invoice %}
+                            <span class="badge bg-info text-dark" title="Έχει εκδοθεί Τιμολόγιο"><i class="bi bi-file-earmark-text-fill"></i> Τιμολόγιο</span>
+                        {% elif last_dn and last_dn.invoice %}
+                            <span class="badge bg-info text-dark" title="Έχει εκδοθεί Τιμολόγιο"><i class="bi bi-file-earmark-text-fill"></i> Τιμολόγιο</span>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                
+                {% if order.customer %}
+                    <span class="d-block mt-1">Πελάτης: <a href="{% url 'customer_detail' order.customer.pk %}">{{ order.customer }}</a></span>
+                {% else %}
+                    <span class="d-block text-muted mt-1">Πελάτης: [Διαγραμμένος]</span>
+                {% endif %}
+                <small class="text-muted">
+                    Ημερομηνία: {{ order.order_date|date:"d/m/Y" }} | 
+                    Κατάσταση: 
+                    {# --- ΠΡΟΣΘΗΚΗ ΤΗΣ ΚΛΑΣΗΣ status-badge ΕΔΩ --- #}
+                    <span class="badge status-badge {% if order.status == order.STATUS_COMPLETED %}bg-success{% elif order.status == order.STATUS_PENDING %}bg-warning text-dark{% elif order.status == order.STATUS_PROCESSING %}bg-primary{% elif order.status == order.STATUS_CANCELLED %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                    | Σύνολο: {{ order.total_amount|floatformat:2 }}€
+                </small>
+            </div>
+
+            <div class="order-actions">
+                <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a>
+                <a href="{% url 'order_edit' order.pk %}" class="btn btn-sm btn-outline-primary" title="Επεξεργασία"><i class="bi bi-pencil"></i></a>
+                
+                {# --- ΠΡΟΣΘΗΚΗ ΦΟΡΜΑΣ ΔΙΑΓΡΑΦΗΣ --- #}
+                <form action="{% url 'order_delete' order.pk %}" method="post" class="delete-form d-inline" data-item-type="την παραγγελία" data-item-name="{{ order.order_number }}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Διαγραφή"><i class="bi bi-trash"></i></button>
+                </form>
+            </div>
+        </div>
+    {% empty %}
+        <div class="alert alert-info mt-3" role="alert">
+            {% if request.GET %}Δεν βρέθηκαν παραγγελίες για τα επιλεγμένα κριτήρια.{% else %}Δεν υπάρχουν καταχωρημένες παραγγελίες.{% endif %}
+        </div>
+    {% endfor %}
+    </div>
+    {% include "core/partials/pagination_controls.html" with page_obj=orders %}
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if (typeof $('.select2-filter-customer').select2 === "function") {
+            $('.select2-filter-customer').select2({
+                placeholder: "Επιλογή πελάτη...",
+                allowClear: true,
+                width: '100%',
+            });
+        }
+        $('.quick-date-range').on('click', function() {
+            const rangeType = $(this).data('range');
+            const dateFromInput = $('#date_from');
+            const dateToInput = $('#date_to');
+            const today = new Date();
+            let startDate, endDate;
+            function formatDate(date) {
+                let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            }
+            switch (rangeType) {
+                case 'today': startDate = endDate = formatDate(today); break;
+                case 'this_week':
+                    let firstDay = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1) ));
+                    let lastDay = new Date(firstDay);
+                    lastDay.setDate(lastDay.getDate() + 6);
+                    startDate = formatDate(firstDay);
+                    endDate = formatDate(lastDay);
+                    break;
+                case 'this_month':
+                    startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                    endDate = formatDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+                    break;
+                case 'last_month':
+                    let firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    let lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    startDate = formatDate(firstDayLastMonth);
+                    endDate = formatDate(lastDayLastMonth);
+                    break;
+                case 'this_year':
+                    startDate = formatDate(new Date(today.getFullYear(), 0, 1));
+                    endDate = formatDate(new Date(today.getFullYear(), 11, 31));
+                    break;
+            }
+            if (startDate && endDate) {
+                dateFromInput.val(startDate);
+                dateToInput.val(endDate);
+            }
+        });
+    });
+</script>
+{% endblock extra_js %}

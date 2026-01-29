@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-shop me-2"></i>{{ title }}</h1>
+        {# Εδώ θα μπει το κουμπί για εξαγωγή σε Excel στο επόμενο βήμα #}
+        <div>
+             <a href="{% url 'export_stock_overview_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+            </a>
+        </div>
+    </div>
+
+    {# Φίλτρα #}
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{% url 'stock_overview_list' %}" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label for="q_filter" class="form-label">Αναζήτηση (Όνομα, Κωδικός, Barcode):</label>
+                    <input type="text" name="q" id="q_filter" value="{{ query_text|default:'' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4">
+                    <label for="status_filter" class="form-label">Κατάσταση Αποθέματος:</label>
+                    <select name="status_filter" id="status_filter" class="form-select form-select-sm">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Όλες οι Καταστάσεις</option>
+                        <option value="sufficient" {% if status_filter == 'sufficient' %}selected{% endif %}>Επαρκές</option>
+                        <option value="low" {% if status_filter == 'low' %}selected{% endif %}>Χαμηλό Απόθεμα</option>
+                        <option value="out_of_stock" {% if status_filter == 'out_of_stock' %}selected{% endif %}>Εκτός Αποθέματος</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-search"></i> Εφαρμογή
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Πίνακας Αποθεμάτων #}
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-table me-1"></i>
+            Απόθεμα Προϊόντων ({{ products.paginator.count }})
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Προϊόν</th>
+                            <th>Κωδικός</th>
+                            <th class="text-end">Τρέχον Απόθεμα</th>
+                            <th class="text-end">Ελάχιστο Όριο</th>
+                            <th class="text-center">Κατάσταση Αποθέματος</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr class="searchable-row has-context-menu" data-id="{{ product.pk }}" data-type="product">
+                                <td><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></td>
+                                <td>{{ product.code }}</td>
+                                <td class="text-end fw-bold">{{ product.stock_quantity|floatformat:2 }} {{ product.get_unit_of_measurement_display }}</td>
+                                <td class="text-end">{{ product.min_stock_level|floatformat:2 }} {{ product.get_unit_of_measurement_display }}</td>
+                                <td class="text-center">
+                                    {% if product.stock_quantity <= 0 %}
+                                        <span class="badge bg-dark">Εκτός Αποθέματος</span>
+                                    {% elif product.stock_quantity <= product.min_stock_level %}
+                                        <span class="badge bg-danger">Χαμηλό Απόθεμα</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Επαρκές</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {# Pagination Controls (ίδια λογική με τις άλλες λίστες) #}
+            {% include "core/partials/pagination_controls.html" with page_obj=products %}
+        </div>
+    </div>
+</div>
+{% endblock %}

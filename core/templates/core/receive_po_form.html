@@ -1,0 +1,93 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-box-arrow-in-down me-2"></i>{{ title }}</h1>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Αριθμός Εντολής:</strong> {{ po.po_number }}</p>
+                    <p class="mb-1"><strong>Προμηθευτής:</strong> {{ po.supplier.name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>Ημερομηνία Εντολής:</strong> {{ po.order_date|date:"d/m/Y" }}</p>
+                    <p class="mb-1"><strong>Κατάσταση:</strong> <span class="badge bg-secondary">{{ po.get_status_display }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {# Αυτό είναι απαραίτητο για τη σωστή λειτουργία των formsets #}
+        {{ formset.management_form }}
+
+        {% if formset.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in formset.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                Είδη προς Παραλαβή
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40%;">Προϊόν</th>
+                                <th class="text-center" style="width: 15%;">Ποσ. Παραγγελίας</th>
+                                <th class="text-center" style="width: 15%;">Ήδη Παραλήφθηκε</th>
+                                <th class="text-center" style="width: 30%;">Ποσότητα Παραλαβής</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formset %}
+                                <tr>
+                                    {# Κρυφό πεδίο με το ID του είδους της παραγγελίας #}
+                                    {{ form.purchase_order_item_id }}
+                                    
+                                    <td>{{ form.product_name }}</td>
+                                    <td class="text-center">{{ form.quantity_ordered }}</td>
+                                    <td class="text-center">{{ form.quantity_already_received }}</td>
+                                    <td>
+                                        {{ form.quantity_to_receive }}
+                                        {% if form.quantity_to_receive.errors %}
+                                            <div class="text-danger small mt-1">
+                                            {% for error in form.quantity_to_receive.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle-fill me-1"></i> Οριστικοποίηση Παραλαβής
+            </button>
+            <a href="{% url 'purchase_order_detail' po.pk %}" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-x-circle me-1"></i> Άκυρο
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock content %}

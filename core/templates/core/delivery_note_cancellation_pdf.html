@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Ακυρωτικό για Δ.Α. {{ note.delivery_note_number }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #333; }
+        h1.cancellation-title {
+            text-align: center;
+            border: 3px solid #d9534f;
+            color: #d9534f;
+            padding: 10px;
+            font-size: 20pt;
+            margin-bottom: 25px;
+        }
+        .details-grid { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .details-grid td { width: 50%; vertical-align: top; padding: 5px; }
+        p { margin: 3px 0; }
+        .label { font-weight: bold; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .items-table th, .items-table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+        .items-table th { background-color: #e9e9e9; }
+        .text-center { text-align: center; }
+        .mydata-section { text-align: right; font-size: 8pt; color: #555; height: 90px; }
+    </style>
+</head>
+<body>
+    <h1 class="cancellation-title">ΑΚΥΡΩΤΙΚΟ ΔΕΛΤΙΟΥ ΑΠΟΣΤΟΛΗΣ</h1>
+    
+    {% if note.mark or note.qr_code_url %}
+    <div class="mydata-section">
+        <p style="color: #d9534f; font-weight: bold;">ΑΚΥΡΩΣΗ ΓΙΑ ΜΑΡΚ: {{ note.mark }}</p>
+    </div>
+    {% endif %}
+
+    <table class="details-grid">
+        <tr>
+            <td style="vertical-align: bottom;">
+                <p><span class="label">Σκοπός Διακίνησης:</span> {{ note.get_purpose_display }}</p>
+            </td>
+            <td style="text-align: right; vertical-align: bottom;">
+                 <p><span class="label">Αρ. Δελτίου (προς ακύρωση):</span> {{ note.delivery_note_number }}</p>
+                 <p><span class="label">Ημερομηνία Έκδοσης:</span> {{ note.issue_date|date:"d/m/Y" }}</p>
+                 <p><span class="label">Σχετ. Παραγγελία:</span> {{ note.order.order_number }}</p>
+            </td>
+        </tr>
+         <tr>
+            <td style="border: 1px solid #ddd; padding: 10px;">
+                <p><span class="label">ΑΠΟΣΤΟΛΕΑΣ</span></p>
+                <p>{{ company_info.NAME }}<br>{{ company_info.ADDRESS }}<br>ΑΦΜ: {{ company_info.VAT_NUMBER }}</p>
+            </td>
+             <td style="border: 1px solid #ddd; padding: 10px;">
+                <p><span class="label">ΠΑΡΑΛΗΠΤΗΣ (Στοιχεία Αποστολής)</span></p>
+                <p>{{ note.shipping_name }}<br>{{ note.shipping_address }}, {{ note.shipping_city }}<br>ΑΦΜ: {{ note.shipping_vat_number|default:'-' }}</p>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding-top: 15px;">
+                <p><span class="label">ΠΕΛΑΤΗΣ (Στοιχεία Τιμολόγησης)</span></p>
+                
+                {# --- Η ΔΙΟΡΘΩΜΕΝΗ ΛΟΓΙΚΗ ΕΙΝΑΙ ΕΔΩ --- #}
+                {% if note.customer.is_branch and note.customer.parent %}
+                    <p>{{ note.customer.parent }}</p>
+                    <p>{{ note.customer.parent.address|default:'' }}, {{ note.customer.parent.city|default:'' }}</p>
+                    <p><span class="label">Α.Φ.Μ.:</span> {{ note.customer.parent.vat_number|default:'-' }}</p>
+                {% else %}
+                    <p>{{ note.customer }}</p>
+                    <p>{{ note.customer.address|default:'' }}, {{ note.customer.city|default:'' }}</p>
+                    <p><span class="label">Α.Φ.Μ.:</span> {{ note.customer.vat_number|default:'-' }}</p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width:10%;">Κωδικός</th>
+                <th style="width:70%;">Περιγραφή Είδους</th>
+                <th class="text-center" style="width:20%;">Ποσότητα</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in note.items.all %}
+            <tr>
+                <td>{{ item.product.code|default:'-' }}</td>
+                <td>{{ item.description }}</td>
+                <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

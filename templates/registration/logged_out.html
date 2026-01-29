@@ -1,0 +1,12 @@
+{% extends "core/base.html" %} {# ή το βασικό σου template #}
+
+{% block title %}Logged Out{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Έχετε αποσυνδεθεί</h2>
+    <p>Έχετε αποσυνδεθεί επιτυχώς από την εφαρμογή.</p>
+    <p><a href="{% url 'login' %}" class="btn btn-primary">Σύνδεση ξανά</a></p>
+    <p><a href="{% url 'home' %}" class="btn btn-secondary">Αρχική Σελίδα</a></p>
+</div>
+{% endblock %}

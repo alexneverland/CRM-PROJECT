@@ -1,0 +1,188 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Λίστα Παραλαβών Αποθέματος" }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* ... (το CSS για το Select2 όπως το είχαμε) ... */
+    .select2-container .select2-selection--single {
+        height: calc(1.5em + .75rem + 2px); 
+        padding: .375rem .75rem;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+        display: flex; 
+        align-items: center; 
+    }
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: normal; 
+        padding-left: 0;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: calc(1.5em + .75rem); 
+        position: absolute;
+        top: 1px; 
+        right: 1px;
+    }
+    .form-filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem; /* Κενό μεταξύ των στοιχείων φίλτρου */
+        align-items: flex-end; /* Στοίχιση των πεδίων και του κουμπιού στο κάτω μέρος */
+    }
+    .form-filter-group > div {
+        flex-grow: 1; /* Επιτρέπει στα πεδία να μεγαλώσουν */
+    }
+    .form-filter-group .btn {
+        flex-shrink: 0; /* Αποτρέπει το στένεμα των κουμπιών */
+    }
+</style>
+{% endblock extra_css %}
+
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4"><i class="bi bi-list-check me-2"></i>{{ title|default:"Λίστα Παραλαβών Αποθέματος" }}</h1>
+
+    <div class="mb-3">
+        <a href="{% url 'receive_stock' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Καταχώρηση Νέας Παραλαβής
+        </a>
+        <a href="{% url 'export_stock_receipts_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+        </a>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="bi bi-filter me-1"></i> Φίλτρα Αναζήτησης
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'stock_receipt_list' %}" class="form-filter-group">
+                {# Φίλτρο Προϊόντος #}
+                <div class="filter-item" style="min-width: 200px;">
+                    <label for="product_filter" class="form-label form-label-sm">Προϊόν:</label>
+                    <select name="product_filter" id="product_filter" class="form-control form-control-sm select2-filter-product">
+                        <option value="">Όλα τα προϊόντα</option>
+                        {% for product in products_for_filter %}
+                            <option value="{{ product.pk }}" {% if product_filter_id == product.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ product.name }} ({{ product.code }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Φίλτρο Ημερομηνίας Από #}
+                <div class="filter-item" style="min-width: 180px;">
+                    <label for="date_from" class="form-label form-label-sm">Ημερομηνία Από:</label>
+                    <input type="date" name="date_from" id="date_from" value="{{ date_from_value|default:'' }}" class="form-control form-control-sm">
+                </div>
+
+                {# Φίλτρο Ημερομηνίας Έως #}
+                <div class="filter-item" style="min-width: 180px;">
+                    <label for="date_to" class="form-label form-label-sm">Ημερομηνία Έως:</label>
+                    <input type="date" name="date_to" id="date_to" value="{{ date_to_value|default:'' }}" class="form-control form-control-sm">
+                </div>
+                
+                {# Φίλτρο Κειμένου #}
+                <div class="filter-item" style="min-width: 200px;">
+                    <label for="q_filter" class="form-label form-label-sm">Ελεύθερο Κείμενο:</label>
+                    <input type="text" name="q" id="q_filter" value="{{ query|default:'' }}" class="form-control form-control-sm" placeholder="Σημειώσεις, χρήστης...">
+                </div>
+                
+                {# Κουμπιά #}
+                <div class="filter-item">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Αναζήτηση</button>
+                </div>
+                {% if query or product_filter_id or date_from_value or date_to_value %}
+                <div class="filter-item">
+                    <a href="{% url 'stock_receipt_list' %}" class="btn btn-outline-secondary btn-sm w-100">Καθαρισμός Φίλτρων</a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {# ... (Ο υπόλοιπος πίνακας και η σελιδοποίηση παραμένουν ως είχαν) ... #}
+    {% if receipts %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-table me-1"></i>
+                Λίστα Παραλαβών ({{ receipts.paginator.count }}) {# Εμφάνιση συνολικού αριθμού εγγραφών #}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Προϊόν</th>
+                                <th scope="col" class="text-center">Ποσότητα</th>
+                                <th scope="col">Ημερομηνία & Ώρα</th>
+                                <th scope="col">Χρήστης Καταχ.</th>
+                                <th scope="col">Σημειώσεις</th>
+                                <th scope="col" class="text-center" style="width: 5%;">Ενέργειες</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for receipt in receipts %}
+                                <tr class="searchable-row">
+                                    <td>
+                                        {% if receipt.product %}
+                                            <a href="{% url 'product_detail' receipt.product.pk %}">{{ receipt.product.name }}</a>
+                                            <small class="text-muted d-block">Κωδ: {{ receipt.product.code }}</small>
+                                        {% else %}
+                                            [Διαγραμμένο Προϊόν]
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">{{ receipt.quantity_added|floatformat:2 }} {{ receipt.product.get_unit_of_measurement_display|default:'' }}</td>
+                                    <td>{{ receipt.date_received|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ receipt.user_who_recorded.username|default:"N/A" }}</td>
+                                    <td>{{ receipt.notes|default:"-" }}</td>
+                                    <td class="text-center">
+                                        <form action="{% url 'stock_receipt_delete' receipt.pk %}" method="post" class="delete-form d-inline" 
+                                              data-item-type="αυτή την παραλαβή" 
+                                              data-item-name="για το προϊόν '{{ receipt.product.name|default:"άγνωστο προϊόν"|escapejs }}' ποσότητας {{ receipt.quantity_added|floatformat:2 }}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Διαγραφή Παραλαβής">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% include "core/partials/pagination_controls.html" with page_obj=receipts %}
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            {% if query or product_filter_id or date_from_value or date_to_value %}
+                Δεν βρέθηκαν παραλαβές για τα επιλεγμένα κριτήρια.
+            {% else %}
+                Δεν υπάρχουν καταχωρημένες παραλαβές αποθέματος.
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if (typeof $('.select2-filter-product').select2 === "function") {
+            $('.select2-filter-product').select2({
+                placeholder: "Επιλέξτε προϊόν...", // Ενημερωμένο placeholder
+                allowClear: true,
+                width: '100%' // ή 'style' για να πάρει το πλάτος του container του
+            });
+        }
+    });
+</script>
+{% endblock extra_js %}

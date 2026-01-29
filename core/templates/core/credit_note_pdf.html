@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Πιστωτικό - {{ credit_note.credit_note_number }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #333; }
+        h1 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; font-size: 16pt; margin-bottom: 0; }
+        .header-grid, .details-grid { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .header-grid td { width: 50%; vertical-align: top; padding: 5px; }
+        .details-grid td { padding: 10px; border: 1px solid #ddd; }
+        .label { font-weight: bold; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .items-table th, .items-table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+        .items-table th { background-color: #e9e9e9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .summary-section { margin-top: 20px; page-break-inside: avoid; }
+        .summary-table { float: right; width: 45%; border-collapse: collapse; }
+        .summary-table td { padding: 4px; }
+        .summary-table .total-label { font-weight: bold; }
+        .grand-total td { font-size: 14pt; font-weight: bold; border-top: 2px solid #000; padding-top: 5px; }
+        .clear { clear: both; }
+        p { margin: 3px 0; }
+    </style>
+</head>
+<body>
+    <h1>ΠΙΣΤΩΤΙΚΟ ΤΙΜΟΛΟΓΙΟ</h1>
+    
+    <table class="header-grid">
+        <tr>
+            <td>
+                <p><span class="label">{{ company_info.NAME|default:'Η Εταιρεία σας' }}</span></p>
+                <p>{{ company_info.ADDRESS|default:'Η Διεύθυνσή σας' }}</p>
+                <p><span class="label">Α.Φ.Μ.:</span> {{ company_info.VAT_NUMBER|default:'' }}</p>
+            </td>
+            <td class="text-right">
+                <p><span class="label">Αρ. Πιστωτικού:</span> {{ credit_note.credit_note_number }}</p>
+                <p><span class="label">Ημερομηνία:</span> {{ credit_note.issue_date|date:"d/m/Y" }}</p>
+                {% if credit_note.original_invoice %}
+                <p><span class="label">Αφορά Τιμολόγιο:</span> {{ credit_note.original_invoice.invoice_number }}</p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <table class="details-grid">
+        <tr>
+            <td colspan="2">
+                <p><span class="label">ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ</span></p>
+                <p>{{ credit_note.customer }}</p>
+                <p>{{ credit_note.customer.address|default:'' }}, {{ credit_note.customer.city|default:'' }}</p>
+                <p><span class="label">Α.Φ.Μ.:</span> {{ credit_note.customer.vat_number|default:'-' }}</p>
+            </td>
+        </tr>
+    </table>
+    
+    {% if credit_note.reason %}
+        <p><span class="label">Αιτιολογία Έκδοσης:</span> {{ credit_note.reason }}</p>
+    {% endif %}
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width:55%;">Περιγραφή Επιστρεφόμενου Είδους</th>
+                <th class="text-center" style="width:15%;">Ποσότητα</th>
+                <th class="text-right" style="width:15%;">Τιμή Μον.</th>
+                <th class="text-right" style="width:15%;">Αξία (προ ΦΠΑ)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in credit_note.items.all %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                <td class="text-right">{{ item.unit_price|floatformat:2 }} €</td>
+                <td class="text-right">{{ item.total_price|floatformat:2 }} €</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary-section">
+        <table class="summary-table">
+            <tr><td>Καθαρή Αξία:</td><td class="text-right">{{ credit_note.subtotal|floatformat:2 }} €</td></tr>
+            <tr><td>Σύνολο ΦΠΑ:</td><td class="text-right">{{ credit_note.vat_amount|floatformat:2 }} €</td></tr>
+            <tr class="grand-total">
+                <td class="total-label">Συνολική Πίστωση:</td>
+                <td class="text-right">{{ credit_note.total_amount|floatformat:2 }} €</td>
+            </tr>
+        </table>
+        <div class="clear"></div>
+    </div>
+</body>
+</html>

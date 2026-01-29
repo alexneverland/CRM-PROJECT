@@ -1,0 +1,121 @@
+{# core/templates/core/product_detail.html #}
+
+{% extends 'core/base.html' %}
+
+{% block title %}Προϊόν: {{ product.name }}{% endblock %}
+
+{% block content %}
+
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">📦 Καρτέλα Προϊόντος: {{ product.name }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'product_edit' product.pk %}" class="btn btn-sm btn-outline-primary me-2">
+                <i class="bi bi-pencil-square"></i> Επεξεργασία
+            </a>
+            <form action="{% url 'product_delete' product.pk %}" method="post" class="delete-form d-inline"
+                  data-item-type="το προϊόν"
+                  data-item-name="'{{ product.name|escapejs }}'">
+                 {% csrf_token %}
+                 <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i> Διαγραφή
+                 </button>
+            </form>
+            <a href="/admin/core/product/{{ product.pk }}/change/" target="_blank" class="btn btn-sm btn-outline-secondary ms-2">
+                <i class="bi bi-gear"></i> Admin
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Βασικά Στοιχεία</div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Κωδικός:</strong> {{ product.code|default:"-" }}</p>
+                    <p class="mb-1"><strong>Barcode:</strong> {{ product.barcode|default:"-" }}</p>
+                    <p class="mb-1"><strong>Περιγραφή:</strong> {{ product.description|linebreaksbr|default:"-" }}</p>
+                    <p class="mb-1"><strong>Μον. Μέτρησης:</strong> {{ product.get_unit_of_measurement_display }}</p>
+                     {% if product.batch_number %}
+                    <p class="mb-1"><strong>Αρ. Παρτίδας:</strong> {{ product.batch_number }}</p>
+                    {% endif %}
+                    {% if product.expiry_date %}
+                    <p class="mb-0"><strong>Ημερ. Λήξης:</strong> {{ product.expiry_date|date:"d/m/Y" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Οικονομικά & Απόθεμα</div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Τιμή Πώλησης:</strong> {{ product.price }} €</p>
+                    <p class="mb-1"><strong>Τιμή Κόστους:</strong> {{ product.cost_price|default:"-" }} €</p>
+                    <p class="mb-1"><strong>Απόθεμα:</strong> <strong class="{% if product.stock_quantity <= product.min_stock_level and product.stock_quantity > 0 %}text-warning{% elif product.stock_quantity <= 0 %}text-danger{% else %}text-success{% endif %}">{{ product.stock_quantity|floatformat:2 }}</strong> {{ product.get_unit_of_measurement_display }}</p>
+                    <p class="mb-1"><strong>Ελάχιστο Όριο:</strong> {{ product.min_stock_level|floatformat:2 }} {{ product.get_unit_of_measurement_display }}</p>
+                    <p class="mb-0"><strong>Κατάσταση:</strong> {% if product.is_active %}<span class="badge bg-success">Ενεργό</span>{% else %}<span class="badge bg-danger">Ανενεργό</span>{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+     <div class="row">
+        <div class="col-md-12">
+            <small class="text-muted">
+                Δημιουργία: {{ product.created_at|date:"d/m/Y H:i" }} | Τελευταία Ενημέρωση: {{ product.updated_at|date:"d/m/Y H:i" }}
+            </small>
+        </div>
+    </div>
+    <hr>
+
+    {# --- ΙΣΤΟΡΙΚΟ ΠΩΛΗΣΕΩΝ ΠΡΟΪΟΝΤΟΣ --- #}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3><i class="bi bi-graph-up me-2"></i> Ιστορικό Πωλήσεων (Ολοκληρωμένες Παραγγελίες)</h3>
+        </div>
+        <div class="card-body">
+            {% if sales_history_items %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Αρ. Παραγγελίας</th>
+                                <th scope="col">Ημερομηνία</th>
+                                <th scope="col">Πελάτης</th>
+                                <th scope="col" class="text-center">Ποσότητα</th>
+                                <th scope="col" class="text-end">Τιμή Μον./Παραγγελία (€)</th>
+                                <th scope="col" class="text-end">Σύνολο Είδους (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in sales_history_items %}
+                                <tr>
+                                    <td><a href="{% url 'order_detail' item.order.pk %}">{{ item.order.order_number }}</a></td>
+                                    <td>{{ item.order.order_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if item.order.customer %}
+                                            <a href="{% url 'customer_detail' item.order.customer.pk %}">{{ item.order.customer }}</a>
+                                        {% else %}
+                                            [Διαγραμμένος Πελάτης]
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                                    <td class="text-end">{{ item.unit_price|floatformat:2 }}</td>
+                                    <td class="text-end">{{ item.total_price|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    Δεν υπάρχουν καταγεγραμμένες ολοκληρωμένες πωλήσεις για αυτό το προϊόν.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {# --- ΤΕΛΟΣ ΙΣΤΟΡΙΚΟΥ ΠΩΛΗΣΕΩΝ --- #}
+
+    <div class="mt-4">
+        <a href="{% url 'product_list' %}" class="btn btn-secondary"><i class="bi bi-arrow-left-circle me-1"></i> Επιστροφή στη Λίστα Προϊόντων</a>
+    </div>
+
+{% endblock content %}

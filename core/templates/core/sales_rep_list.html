@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-person-badge me-2"></i>{{ title }}</h1>
+        <a href="{% url 'sales_rep_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> Προσθήκη</a>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ονοματεπώνυμο</th>
+                            <th>Τύπος</th> <th>Τηλέφωνο</th>
+                            <th>Προμήθεια (%)</th>
+                            <th>Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rep in sales_reps %}
+                        <tr>
+                            <td>{{ rep.user.get_full_name|default:rep.user.username }}</td>
+                            <td>{{ rep.get_rep_type_display }}</td> <td>{{ rep.phone|default:'-' }}</td>
+                            <td class="text-end">{{ rep.commission_rate|floatformat:2 }}%</td>
+                            <td>
+                                <a href="{% url 'sales_rep_edit' rep.pk %}" class="btn btn-sm btn-outline-primary">Επεξεργασία</a>
+                                <form action="{% url 'sales_rep_delete' rep.pk %}" method="post" class="d-inline delete-form" data-item-name="{{ rep }}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Διαγραφή</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center">Δεν υπάρχουν καταχωρημένοι πωλητές/αντιπρόσωποι.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

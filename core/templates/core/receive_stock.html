@@ -1,0 +1,82 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-box-arrow-in-down me-2"></i>{{ title }}</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-5 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">1. Χειροκίνητη Εισαγωγή Αποθέματος</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Για γρήγορες παραλαβές που δεν συνδέονται με Εντολή Αγοράς.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {# Εμφάνιση non-field errors αν υπάρχουν #}
+                        {% if manual_form.non_field_errors %}
+                            <div class="alert alert-danger p-2 small">
+                                {{ manual_form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        {# Χρησιμοποιούμε την μεταβλητή manual_form που περάσαμε από τη view #}
+                        {{ manual_form.as_p }}
+
+                        <button type="submit" class="btn btn-primary mt-3 w-100">
+                            <i class="bi bi-check-circle me-1"></i> Καταχώρηση Παραλαβής
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">2. Παραλαβή Βάσει Εντολής Αγοράς</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Επιλέξτε μια Εντολή Αγοράς για να καταχωρήσετε τα προϊόντα που παραλάβατε.</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Αρ. Εντολής</th>
+                                    <th>Προμηθευτής</th>
+                                    <th>Ημερομηνία</th>
+                                    <th class="text-center">Ενέργεια</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for po in open_pos %}
+                                    <tr>
+                                        <td><strong>{{ po.po_number }}</strong></td>
+                                        <td>{{ po.supplier.name }}</td>
+                                        <td>{{ po.order_date|date:"d/m/Y" }}</td>
+                                        <td class="text-center">
+                                            <a href="{% url 'receive_po' po.pk %}" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-box-seam me-1"></i> Παραλαβή
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center p-3">Δεν υπάρχουν ανοιχτές Εντολές Αγοράς.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

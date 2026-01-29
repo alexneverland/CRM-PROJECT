@@ -1,0 +1,95 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Επεξεργασία Πελάτη: {{ customer.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4"><i class="bi bi-pencil-square me-2"></i>Επεξεργασία Πελάτη: {{ customer.get_full_name }}</h1>
+
+    <form method="post" class="dirty-check-form" novalidate>
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                Στοιχεία Πελάτη
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for field in form %}
+                        <div class="col-md-6 mb-3" id="field-wrapper-{{ field.name }}">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}{% if field.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save me-1"></i> Αποθήκευση Αλλαγών
+            </button>
+            <a href="{% url 'customer_detail' customer.pk %}" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-x-circle me-1"></i> Άκυρο
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isBranchCheckbox = document.getElementById('id_is_branch');
+    if (!isBranchCheckbox) return; // Αν δεν υπάρχει το πεδίο, σταματάμε
+
+    const canBeInvoicedCheckbox = document.getElementById('id_can_be_invoiced');
+    const parentFieldWrapper = document.getElementById('field-wrapper-parent');
+    
+    // Ενημερωμένη λίστα με ΟΛΑ τα πεδία που πρέπει να κρυφτούν για ένα υποκατάστημα
+    const financialFieldNames = [
+        'sales_rep', 'payment_method', 'payment_terms', 'credit_limit', 
+        'can_be_invoiced', 'vat_number', 'doy'
+         // Και τα πεδία διεύθυνσης αποστολής
+    ];
+    
+    const fieldWrappers = financialFieldNames.map(name => document.getElementById(`field-wrapper-${name}`));
+
+    function toggleFields() {
+        const isBranch = isBranchCheckbox.checked;
+
+        if (parentFieldWrapper) {
+            parentFieldWrapper.style.display = isBranch ? 'block' : 'none';
+        }
+
+        fieldWrappers.forEach(wrapper => {
+            if (wrapper) {
+                wrapper.style.display = isBranch ? 'none' : 'block';
+            }
+        });
+        
+        if(canBeInvoicedCheckbox){
+             canBeInvoicedCheckbox.checked = !isBranch;
+        }
+    }
+
+    // Αρχικοποίηση κατά τη φόρτωση και event listener
+    toggleFields();
+    isBranchCheckbox.addEventListener('change', toggleFields);
+});
+</script>
+{% endblock %}

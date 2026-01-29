@@ -1,0 +1,163 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Dashboard" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Dashboard</h1>
+
+    {# --- ΕΝΟΤΗΤΑ ΕΙΔΟΠΟΙΗΣΕΩΝ --- #}
+    {% if low_stock_products %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning border-warning d-flex align-items-center" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">Ειδοποίηση Χαμηλού Αποθέματος</h5>
+                    Βρέθηκαν <strong>{{ low_stock_count }} προϊόντα</strong> κάτω από το όριο ασφαλείας.
+                    <a href="{% url 'stock_overview_list' %}?status_filter=low" class="alert-link ms-2">Δείτε τη λίστα</a>.
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {# --- ΤΕΛΟΣ ΕΝΟΤΗΤΑΣ ΕΙΔΟΠΟΙΗΣΕΩΝ --- #}
+    {% if due_soon_invoices %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info border-info d-flex align-items-center" role="alert">
+            <i class="bi bi-calendar-week-fill fs-3 me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Ειδοποίηση Λήξης Τιμολογίων</h5>
+                Βρέθηκαν <strong>{{ due_soon_count }} τιμολόγια</strong> που λήγουν τις επόμενες 7 ημέρες.
+                <a href="{% url 'invoice_list' %}?due=soon" class="alert-link ms-2">Δείτε τη λίστα</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+    {# --- STAT CARDS --- #}
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-3 fw-bold">{{ total_customers }}</div>
+                            <div class="small">Σύνολο Πελατών</div>
+                        </div>
+                        <i class="bi bi-people-fill fs-1 opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{% url 'customer_list' %}">Προβολή Λίστας</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-dark mb-4">
+                <div class="card-body">
+                     <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-3 fw-bold">{{ open_orders_count }}</div>
+                            <div class="small">Ανοιχτές Παραγγελίες</div>
+                        </div>
+                        <i class="bi bi-receipt-cutoff fs-1 opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-dark stretched-link" href="{% url 'order_list' %}?status=pending">Προβολή Λίστας</a>
+                    <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-3 fw-bold">{{ sales_this_month|floatformat:2 }}€</div>
+                            <div class="small">Πωλήσεις Τρέχοντος Μηνός</div>
+                        </div>
+                        <i class="bi bi-graph-up-arrow fs-1 opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{% url 'all_payments_list' %}">Προβολή Πληρωμών</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                     <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fs-3 fw-bold">{{ total_products }}</div>
+                            <div class="small">Σύνολο Προϊόντων</div>
+                        </div>
+                        <i class="bi bi-box-seam-fill fs-1 opacity-50"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="{% url 'product_list' %}">Προβολή Λίστας</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- WIDGETS ΠΡΟΣΦΑΤΩΝ ΚΙΝΗΣΕΩΝ --- #}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-clock-history me-1"></i>Πρόσφατες Παραγγελίες</div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                    <ul class="list-group list-group-flush">
+                        {% for order in recent_orders %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center has-context-menu" data-id="{{ order.pk }}" data-type="order">
+                                <div>
+                                    <a href="{% url 'order_detail' order.pk %}" class="fw-bold">{{ order.order_number }}</a>
+                                    <small class="d-block text-muted">{{ order.customer }}</small>
+                                </div>
+                                <span class="badge {% if order.status == 'completed' %}bg-success{% elif order.status == 'cancelled' %}bg-danger{% else %}bg-primary{% endif %} rounded-pill">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Δεν υπάρχουν πρόσφατες παραγγελίες.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-cash-coin me-1"></i>Πρόσφατες Πληρωμές</div>
+                <div class="card-body">
+                    {% if recent_payments %}
+                    <ul class="list-group list-group-flush">
+                        {% for payment in recent_payments %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center has-context-menu" data-id="{{ payment.pk }}" data-type="payment">
+                                <div>
+                                    <a href="{% url 'customer_financial_detail' payment.customer.pk %}" class="fw-bold">{{ payment.receipt_number }}</a>
+                                    <small class="d-block text-muted">{{ payment.customer }} - {{ payment.get_payment_method_display }}</small>
+                                </div>
+                                <span class="badge bg-success rounded-pill">{{ payment.amount_paid|floatformat:2 }}€</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Δεν υπάρχουν πρόσφατες πληρωμές.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

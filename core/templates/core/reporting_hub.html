@@ -1,0 +1,85 @@
+{% extends 'core/base.html' %}
+{% block title %}Κέντρο Αναφορών{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4"><i class="bi bi-bar-chart-line-fill me-2"></i>Κέντρο Αναφορών</h1>
+    <p>Επιλέξτε μια από τις διαθέσιμες αναφορές για να δείτε τα δεδομένα σας.</p>
+    <div class="row">
+        
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-light text-dark mb-4">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-calendar-month me-2"></i>Πωλήσεις ανά Μήνα</h5>
+                    <p class="card-text">Γράφημα που δείχνει τη συνολική αξία των τιμολογίων για κάθε μήνα του τελευταίου έτους.</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-dark stretched-link" href="{% url 'report_sales_by_month' %}">Προβολή Αναφοράς</a>
+                    <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-light text-dark mb-4">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-people-fill me-2"></i>Ισοζύγιο Πελατών</h5>
+                    <p class="card-text">Αναλυτική κατάσταση με χρεώσεις, πιστώσεις και τελικό υπόλοιπο για όλους τους πελάτες.</p>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-dark stretched-link" href="{% url 'report_customer_balance' %}">Προβολή Αναφοράς</a>
+                    <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+    <div class="card bg-light text-dark mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-percent me-2"></i>Ανάλυση ΦΠΑ</h5>
+            <p class="card-text">Συγκεντρωτική κατάσταση καθαρής αξίας και ΦΠΑ ανά συντελεστή για επιλεγμένη περίοδο.</p>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <a class="small text-dark stretched-link" href="{% url 'report_vat_analysis' %}">Προβολή Αναφοράς</a>
+            <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+        </div>
+    </div>
+</div>
+<div class="col-xl-4 col-md-6">
+    <div class="card bg-light text-dark mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-graph-up-arrow me-2"></i>Ανάλυση Κερδοφορίας</h5>
+            <p class="card-text">Αναλυτική κατάσταση με πωλήσεις, κόστος και μικτό κέρδος ανά προϊόν για επιλεγμένη περίοδο.</p>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <a class="small text-dark stretched-link" href="{% url 'report_profitability' %}">Προβολή Αναφοράς</a>
+            <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+        </div>
+    </div>
+</div>
+<div class="col-xl-4 col-md-6">
+    <div class="card bg-light text-dark mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-person-check-fill me-2"></i>Πωλήσεις ανά Πωλητή</h5>
+            <p class="card-text">Ανάλυση τζίρου, πλήθους τιμολογίων και προμηθειών για κάθε πωλητή ξεχωριστά.</p>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <a class="small text-dark stretched-link" href="{% url 'report_sales_by_rep' %}">Προβολή Αναφοράς</a>
+            <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+        </div>
+    </div>
+</div>
+<div class="col-xl-4 col-md-6">
+    <div class="card bg-light text-dark mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-geo-alt-fill me-2"></i>Πωλήσεις ανά Πόλη</h5>
+            <p class="card-text">Συγκεντρωτικός τζίρος πωλήσεων ομαδοποιημένος ανά πόλη του πελάτη.</p>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            <a class="small text-dark stretched-link" href="{% url 'report_sales_by_city' %}">Προβολή Αναφοράς</a>
+            <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+        </div>
+    </div>
+</div>
+        </div>
+</div>
+{% endblock %}

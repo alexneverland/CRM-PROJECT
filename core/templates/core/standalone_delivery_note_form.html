@@ -1,0 +1,219 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .formset-row td { vertical-align: middle; padding: .3rem !important; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">{{ title }}</h1>
+    <p>Χρησιμοποιήστε αυτή τη φόρμα για αποστολές που δεν συνδέονται με παραγγελία (π.χ. δείγματα, επισκευές). Μπορείτε να επιλέξετε έναν υπάρχοντα πελάτη για να προσυμπληρωθούν τα στοιχεία του ή να τα γράψετε χειροκίνητα.</p>
+
+    <form method="post" id="dn-form" class="dirty-check-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors or formset.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }} {{ formset.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card p-3 mb-3">
+            <h5 class="card-title">Στοιχεία Παραστατικού & Παραλήπτη</h5>
+            {{ form.customer }}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.customer_search.id_for_label }}" class="form-label">{{ form.customer_search.label }}</label>
+                    {{ form.customer_search }}
+                    <small class="form-text text-muted">{{ form.customer_search.help_text }}</small>
+                </div>
+                 <div class="col-md-3 mb-3">
+                    <label for="{{ form.issue_date.id_for_label }}" class="form-label">{{ form.issue_date.label }}{% if form.issue_date.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.issue_date }}
+                </div>
+                 <div class="col-md-3 mb-3">
+                    <label for="{{ form.purpose.id_for_label }}" class="form-label">{{ form.purpose.label }}{% if form.purpose.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.purpose }}
+                </div>
+            </div>
+            <hr>
+            <h6>Στοιχεία Αποστολής (Παραλήπτης)</h6>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label for="{{ form.shipping_name.id_for_label }}" class="form-label">{{ form.shipping_name.label }}{% if form.shipping_name.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.shipping_name }}
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label for="{{ form.shipping_vat_number.id_for_label }}" class="form-label">{{ form.shipping_vat_number.label }}{% if form.shipping_vat_number.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.shipping_vat_number }}
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label for="{{ form.shipping_address.id_for_label }}" class="form-label">{{ form.shipping_address.label }}{% if form.shipping_address.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.shipping_address }}
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="{{ form.shipping_city.id_for_label }}" class="form-label">{{ form.shipping_city.label }}{% if form.shipping_city.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.shipping_city }}
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="{{ form.shipping_postal_code.id_for_label }}" class="form-label">{{ form.shipping_postal_code.label }}{% if form.shipping_postal_code.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.shipping_postal_code }}
+                </div>
+            </div>
+             <hr>
+             <h6>Στοιχεία Μεταφοράς</h6>
+             <div class="row">
+                <div class="col-md-4 mb-2">
+                    <label for="{{ form.license_plate.id_for_label }}" class="form-label">{{ form.license_plate.label }}{% if form.license_plate.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.license_plate }}
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label for="{{ form.carrier.id_for_label }}" class="form-label">{{ form.carrier.label }}{% if form.carrier.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.carrier }}
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label for="{{ form.tracking_number.id_for_label }}" class="form-label">{{ form.tracking_number.label }}{% if form.tracking_number.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                    {{ form.tracking_number }}
+                </div>
+             </div>
+        </div>
+
+        <div class="card p-3">
+            <h5 class="card-title">Είδη προς Διακίνηση</h5>
+            {{ formset.management_form }}
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th style="width: 45%;">Προϊόν</th>
+                        <th style="width: 35%;">Περιγραφή (Προαιρετικά)</th>
+                        <th class="text-center" style="width: 15%;">Ποσότητα</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="dn-items-container">
+                {% for item_form in formset %}
+                    <tr class="formset-row">
+                        {{ item_form.product }}
+                        <td>{{ item_form.product_search }}</td>
+                        <td>{{ item_form.description }}</td>
+                        <td>{{ item_form.quantity }}</td>
+                        <td>{% if formset.can_delete %}{{ item_form.DELETE }}{% endif %}</td>
+                    </tr>
+                     {% if item_form.errors %}
+                        <tr class="formset-error-row"><td colspan="4"><div class="alert alert-danger p-1 small">{{ item_form.errors }}</div></td></tr>
+                     {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-outline-success btn-sm align-self-start mt-2" id="add-item">➕ Προσθήκη Γραμμής</button>
+        </div>
+
+        <div class="card p-3 mt-3">
+            {{ form.notes.label_tag }}
+            {{ form.notes }}
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-lg mt-3">Δημιουργία Δελτίου Αποστολής</button>
+    </form>
+
+    <table class="d-none"><tbody id="empty-form-template">
+        <tr class="formset-row">
+            {{ formset.empty_form.product }}
+            <td>{{ formset.empty_form.product_search }}</td>
+            <td>{{ formset.empty_form.description }}</td>
+            <td>{{ formset.empty_form.quantity }}</td>
+            <td>{% if formset.can_delete %}{{ formset.empty_form.DELETE }}{% endif %}</td>
+        </tr>
+    </tbody></table>
+</div>
+{% endblock content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // --- Λογική για τις γραμμές των Ειδών ---
+    function initializeItemRow(rowElement) {
+        const productSearchInput = $(rowElement).find('input[name$="-product_search"]');
+        productSearchInput.select2({
+            placeholder: 'Αναζήτηση προϊόντος...',
+            width: '100%',
+            ajax: {
+                url: "{% url 'search_products_ajax' %}",
+                dataType: 'json',
+                delay: 250,
+                data: p => ({ q: p.term }),
+                processResults: d => ({ results: d.results })
+            }
+        }).on('select2:select', function(e) {
+            const data = e.params.data;
+            const row = $(this).closest('.formset-row');
+            // Ενημερώνουμε το κρυφό πεδίο με το ID του προϊόντος
+            row.find('input[name$="-product"]').val(data.id);
+            // Δημιουργούμε ένα νέο <option> για να εμφανιστεί η επιλογή στο Select2
+            var option = new Option(data.text, data.id, true, true);
+            $(this).empty().append(option).trigger('change');
+        });
+    }
+
+    const itemsContainer = $('#dn-items-container');
+    // Χειρισμός του κουμπιού "Προσθήκη Γραμμής"
+    $('#add-item').on('click', function() {
+        let formIdx = parseInt($('#id_items-TOTAL_FORMS').val());
+        let newFormHtml = $('#empty-form-template').html().replace(/__prefix__/g, formIdx);
+        let newForm = $(newFormHtml);
+        itemsContainer.append(newForm);
+        initializeItemRow(newForm); // Αρχικοποιούμε το Select2 στη νέα γραμμή
+        $('#id_items-TOTAL_FORMS').val(formIdx + 1);
+    });
+    // Αρχικοποίηση των Select2 για τις ήδη υπάρχουσες γραμμές κατά τη φόρτωση
+    itemsContainer.find('.formset-row').each(function() {
+        initializeItemRow(this);
+    });
+
+    // --- Λογική για το πεδίο του Πελάτη ---
+    const shippingFields = $('#id_shipping_name, #id_shipping_address, #id_shipping_city, #id_shipping_postal_code, #id_shipping_vat_number');
+
+    $('#id_customer_search').select2({
+        placeholder: 'Αναζήτηση πελάτη ή άφησε κενό...',
+        width: '100%',
+        allowClear: true,
+        ajax: {
+            url: "{% url 'search_customers_ajax' %}",
+            dataType: 'json',
+            delay: 250,
+            data: p => ({ q: p.term }),
+            processResults: d => ({ results: d.results })
+        }
+    }).on('select2:select', function(e) {
+        var data = e.params.data;
+        if (data && data.id) {
+            // Δημιουργούμε το option για να εμφανιστεί η επιλογή
+            var option = new Option(data.text, data.id, true, true);
+            $(this).empty().append(option).trigger('change');
+            
+            // Ενημερώνουμε το κρυφό πεδίο του πελάτη
+            $('#id_customer').val(data.id);
+            
+            // Συμπληρώνουμε και ΚΛΕΙΔΩΝΟΥΜΕ τα πεδία αποστολής
+            $('#id_shipping_name').val(data.shipping_name || '').prop('readonly', true);
+            $('#id_shipping_address').val(data.shipping_address || '').prop('readonly', true);
+            $('#id_shipping_city').val(data.shipping_city || '').prop('readonly', true);
+            $('#id_shipping_postal_code').val(data.shipping_postal_code || '').prop('readonly', true);
+            $('#id_shipping_vat_number').val(data.shipping_vat_number || '').prop('readonly', true);
+        }
+    }).on('select2:unselect', function(e) {
+        // Καθαρίζουμε το κρυφό πεδίο του πελάτη
+        $('#id_customer').val('');
+        // Καθαρίζουμε και ΞΕΚΛΕΙΔΩΝΟΥΜΕ τα πεδία αποστολής
+        shippingFields.val('').prop('readonly', false);
+    });
+});
+</script>
+{% endblock extra_js %}

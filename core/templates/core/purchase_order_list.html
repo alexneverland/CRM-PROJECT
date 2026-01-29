@@ -1,0 +1,53 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-cart4 me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'purchase_order_create' %}" class="btn btn-primary me-2"> <i class="bi bi-plus-circle me-1"></i> Νέα Εντολή Αγοράς
+            </a>
+            <a href="{% url 'export_purchase_orders_excel' %}" class="btn btn-success"> <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Αρ. Εντολής</th>
+                            <th>Ημερομηνία</th>
+                            <th>Προμηθευτής</th>
+                            <th class="text-center">Κατάσταση</th>
+                            <th class="text-end">Συνολικό Ποσό (€)</th>
+                            <th class="text-center">Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for po in purchase_orders %}
+                    <tr class="searchable-row has-context-menu" data-id="{{ po.pk }}" data-type="purchase_order">
+                            <td><a href="{% url 'purchase_order_detail' po.pk %}"><strong>{{ po.po_number|default:"-" }}</strong></a></td>
+                            <td>{{ po.order_date|date:"d/m/Y" }}</td>
+                            <td><a href="#">{{ po.supplier.name }}</a></td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">{{ po.get_status_display }}</span>
+                            </td>
+                            <td class="text-end fw-bold">{{ po.total_amount|floatformat:2 }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'purchase_order_detail' po.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center p-4">Δεν υπάρχουν καταχωρημένες Εντολές Αγοράς.</td></tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

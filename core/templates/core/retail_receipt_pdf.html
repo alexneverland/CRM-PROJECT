@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Απόδειξη Λιανικής - {{ receipt.receipt_number }}</title>
+    <style>
+        @page {
+            /* Ορίζουμε ένα τυπικό πλάτος για χαρτί ταμειακής (80mm) */
+            size: 80mm 297mm; /* Το ύψος είναι Α4 για να χωράει πολλά προϊόντα */
+            margin: 5mm;
+        }
+        body {
+            font-family: "DejaVu Sans", "Arial", sans-serif;
+            font-size: 9pt; /* Μικρότερη γραμματοσειρά για να ταιριάζει */
+            line-height: 1.3;
+            color: #000;
+        }
+        .receipt-container {
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .header h3 {
+            margin: 0;
+            font-size: 11pt;
+        }
+        .header p {
+            margin: 2px 0;
+            font-size: 8pt;
+        }
+        .receipt-info p {
+            margin: 2px 0;
+            font-size: 8pt;
+        }
+        hr.dashed {
+            border: 0;
+            border-top: 1px dashed #000;
+        }
+        .items-table {
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            font-size: 8.5pt;
+        }
+        .items-table td {
+            padding: 2px 0;
+        }
+        .item-name {
+            width: 70%;
+        }
+        .item-price {
+            width: 30%;
+            text-align: right;
+        }
+        .totals-section {
+            margin-top: 10px;
+        }
+        .totals-table {
+            width: 100%;
+            font-size: 9pt;
+        }
+        .totals-table td {
+            padding: 2px 0;
+        }
+        .totals-label {
+            text-align: right;
+            padding-right: 10px;
+        }
+        .totals-value {
+            text-align: right;
+            font-weight: bold;
+        }
+        .grand-total td {
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 8pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <h3>{{ company_info.NAME }}</h3>
+            <p>{{ company_info.ADDRESS }}</p>
+            <p>ΑΦΜ: {{ company_info.VAT_NUMBER }} - Τηλ: {{ company_info.PHONE }}</p>
+        </div>
+        
+        <hr class="dashed">
+
+        <div class="receipt-info">
+            <p>ΑΠΟΔΕΙΞΗ ΛΙΑΝΙΚΗΣ ΠΩΛΗΣΗΣ</p>
+            <p>Αρ: <strong>{{ receipt.receipt_number }}</strong></p>
+            <p>Ημερ/νία: {{ receipt.issue_date|date:"d/m/Y H:i:s" }}</p>
+            <p>Πελάτης: {{ receipt.customer }}</p>
+        </div>
+
+        <hr class="dashed">
+
+        <table class="items-table">
+            {% for item in receipt.items.all %}
+            <tr>
+                <td class="item-name">
+                    {{ item.description }}<br>
+                    <small>{{ item.quantity|floatformat:"-2" }} x {{ item.unit_price|floatformat:2 }}€
+                        {% if item.discount_percentage > 0 %}
+                            (-{{ item.discount_percentage|floatformat:"-0" }}%)
+                        {% endif %}
+                    </small>
+                </td>
+                <td class="item-price">{{ item.final_price|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <hr class="dashed">
+
+        <div class="totals-section">
+            <table class="totals-table">
+                <tr>
+                    <td class="totals-label">Καθαρή Αξία:</td>
+                    <td class="totals-value">{{ receipt.subtotal|floatformat:2 }} €</td>
+                </tr>
+                <tr>
+                    <td class="totals-label">Φ.Π.Α.:</td>
+                    <td class="totals-value">{{ receipt.vat_amount|floatformat:2 }} €</td>
+                </tr>
+                <tr class="grand-total">
+                    <td class="totals-label">ΓΕΝΙΚΟ ΣΥΝΟΛΟ:</td>
+                    <td class="totals-value">{{ receipt.total_amount|floatformat:2 }} €</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Ευχαριστούμε για την προτίμησή σας!</p>
+        </div>
+    </div>
+</body>
+</html>

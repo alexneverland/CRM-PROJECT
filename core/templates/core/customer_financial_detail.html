@@ -1,0 +1,237 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-wallet2 me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'payment_create' %}?customer_id={{ customer.pk }}" class="btn btn-success"><i class="bi bi-plus-circle-dotted"></i> Προσθήκη Πληρωμής</a>
+            <a href="{% url 'customer_detail' customer.pk %}" class="btn btn-outline-secondary ms-2"><i class="bi bi-person-lines-fill"></i> Γενική Καρτέλα</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card mb-4">
+                <div class="card-header">Συνολική Οικονομική Εικόνα</div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4 border-end">
+                            <h5 class="text-muted small text-uppercase">Συνολικός Τζίρος</h5>
+                            <span class="h4 fw-bold">{{ total_invoiced|floatformat:2 }} €</span>
+                        </div>
+                        <div class="col-md-4 border-end">
+                            <h5 class="text-muted small text-uppercase">Σύνολο Πληρωμών</h5>
+                            <span class="h4 fw-bold text-success">{{ total_paid|floatformat:2 }} €</span>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="text-muted small text-uppercase">Σύνολο Εκπρόθεσμων</h5>
+                            <span class="h4 fw-bold text-danger">{{ overdue_amount|floatformat:2 }} €</span>
+                            <small class="d-block text-muted">({{ overdue_count }} τιμολόγια)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card mb-4">
+                <div class="card-header">Πιστωτικός Έλεγχos</div>
+                <div class="card-body">
+                    <h5 class="text-muted small text-uppercase">Τρέχον Υπόλοιπο</h5>
+                    <span class="h4 fw-bold {% if customer.balance > 0 %}text-danger{% else %}text-secondary{% endif %}">{{ customer.balance|floatformat:2 }} €</span>
+                    
+                    {% if customer.credit_limit > 0 %}
+                        <div class="progress mt-2" style="height: 20px;">
+                            <div class="progress-bar {% if credit_percentage > 100 %}bg-danger{% elif credit_percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ credit_percentage|floatformat:0 }}%;" aria-valuenow="{{ credit_percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ credit_percentage|floatformat:0 }}%
+                            </div>
+                        </div>
+                        <small class="text-muted">Πιστωτικό Όριο: {{ customer.credit_limit|floatformat:2 }} €</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="mb-3"><i class="bi bi-journal-text me-2"></i>Ημερολόγιο Κινήσεων</h4>
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label for="transaction-search-input" class="form-label form-label-sm">Αναζήτηση Κειμένου:</label>
+                    <input type="search" id="transaction-search-input" class="form-control form-control-sm" placeholder="Αρ. Παρ/κού, Περιγραφή...">
+                </div>
+                <div class="col-md-3">
+                    <label for="doc-type-filter" class="form-label form-label-sm">Τύπος Παραστατικού:</label>
+                    <select id="doc-type-filter" class="form-select form-select-sm">
+                        <option value="all" selected>Όλοι οι Τύποι</option>
+                        <option value="Τιμολόγιο">Τιμολόγια</option>
+                        <option value="Πληρωμή">Πληρωμές</option>
+                        <option value="Πιστωτικό Τιμολόγιο">Πιστωτικά</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label form-label-sm">Από:</label>
+                    <input type="date" id="date_from" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label form-label-sm">Έως:</label>
+                    <input type="date" id="date_to" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" id="clear-filters-btn" class="btn btn-sm btn-outline-secondary w-100">X</button>
+                </div>
+            </div>
+            <div class="mt-2">
+                <div class="btn-group btn-group-sm flex-wrap" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary quick-date-range" data-range="today">Σήμερα</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary quick-date-range" data-range="this_week">Αυτή την Εβδομάδα</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary quick-date-range" data-range="this_month">Αυτόν τον Μήνα</button>
+                </div>
+            </div>
+        </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if transaction_log %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 10%;">Ημερομηνία</th>
+                                <th style="width: 20%;">Παραστατικό</th>
+                                <th style="width: 40%;">Περιγραφή</th>
+                                <th class="text-end" style="width: 10%;">Χρέωση (€)</th>
+                                <th class="text-end" style="width: 10%;">Πίστωση (€)</th>
+                                <th class="text-end" style="width: 10%;">Υπόλοιπο (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for entry in transaction_log %}
+                            <tr class="searchable-row {% if entry.is_overdue %}table-warning{% endif %}" data-date="{{ entry.date|date:'Y-m-d' }}" data-doc-type="{{ entry.doc_type }}">
+                                <td>{{ entry.date|date:"d/m/Y" }}</td>
+                                <td>
+                                    {# Ο έλεγχος για το link παραμένει ο ίδιος και τώρα θα δουλεύει σωστά #}
+                                    {% if entry.doc_type == 'Τιμολόγιο' %}
+                                        <a href="{% url 'invoice_detail' entry.obj.pk %}" title="Προβολή Τιμολογίου"><strong>{{ entry.doc_number }}</strong></a>
+                                    {% elif entry.doc_type == 'Πιστωτικό Τιμολόγιο' %}
+                                        <a href="{% url 'credit_note_detail' entry.obj.pk %}" title="Προβολή Πιστωτικού"><strong>{{ entry.doc_number }}</strong></a>
+                                    {% elif entry.doc_type == 'Πληρωμή' %}
+                                        <a href="{% url 'view_payment_receipt' entry.obj.pk %}" target="_blank" title="Προβολή Απόδειξης (PDF)"><strong>{{ entry.doc_number }}</strong></a>
+                                    {% else %}
+                                        <strong>{{ entry.doc_number }}</strong>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {# Εδώ εμφανίζουμε την αναλυτική περιγραφή #}
+                                    {{ entry.description }}
+                                </td>
+                                <td class="text-end">{{ entry.debit|floatformat:2 }}</td>
+                                <td class="text-end text-success">{{ entry.credit|floatformat:2 }}</td>
+                                <td class="text-end fw-bold">{{ entry.running_balance|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info mb-0" role="alert">
+                    Δεν υπάρχουν οικονομικές κινήσεις για αυτόν τον πελάτη.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+$(document).ready(function() {
+    const textInput = $('#transaction-search-input');
+    const docTypeInput = $('#doc-type-filter');
+    const dateFromInput = $('#date_from');
+    const dateToInput = $('#date_to');
+
+    function applyFilters() {
+        const searchTerm = textInput.val().toLowerCase().trim();
+        const docTypeFilter = docTypeInput.val();
+        const dateFrom = dateFromInput.val();
+        const dateTo = dateToInput.val();
+
+        $('.searchable-row').each(function() {
+            const row = $(this);
+            const rowText = row.text().toLowerCase();
+            const rowDocType = row.data('doc-type');
+            const rowDate = row.data('date');
+
+            // Έλεγχος 1: Κείμενο
+            const textMatch = rowText.includes(searchTerm);
+
+            // Έλεγχος 2: Τύπος Παραστατικού
+            const docTypeMatch = (docTypeFilter === 'all' || rowDocType === docTypeFilter);
+
+            // Έλεγχος 3: Ημερομηνία
+            let dateMatch = true; // Υποθέτουμε ότι ταιριάζει εκτός αν αποδειχθεί το αντίθετο
+            if (dateFrom && rowDate < dateFrom) {
+                dateMatch = false;
+            }
+            if (dateTo && rowDate > dateTo) {
+                dateMatch = false;
+            }
+
+            // Εμφάνιση γραμμής ΜΟΝΟ αν ταιριάζουν ΟΛΑ τα φίλτρα
+            if (textMatch && docTypeMatch && dateMatch) {
+                row.show();
+            } else {
+                row.hide();
+            }
+        });
+    }
+
+    // Εφαρμογή φίλτρων σε κάθε αλλαγή
+    $('#transaction-search-input, #doc-type-filter, #date_from, #date_to').on('keyup change', applyFilters);
+
+    // Λογική για τα κουμπιά γρήγορης επιλογής ημερομηνίας
+    $('.quick-date-range').on('click', function() {
+        const rangeType = $(this).data('range');
+        const today = new Date();
+        let startDate, endDate;
+
+        function formatDate(date) {
+            let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
+
+        if (rangeType === 'today') { startDate = endDate = formatDate(today); }
+        if (rangeType === 'this_week') {
+            let firstDay = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1) ));
+            let lastDay = new Date(firstDay); lastDay.setDate(lastDay.getDate() + 6);
+            startDate = formatDate(firstDay); endDate = formatDate(lastDay);
+        }
+        if (rangeType === 'this_month') {
+            startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
+            endDate = formatDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+        }
+
+        dateFromInput.val(startDate);
+        dateToInput.val(endDate);
+        applyFilters(); // Εφαρμογή φίλτρων μετά την επιλογή
+    });
+
+    // Λογική για το κουμπί καθαρισμού
+    $('#clear-filters-btn').on('click', function() {
+        textInput.val('');
+        docTypeInput.val('all');
+        dateFromInput.val('');
+        dateToInput.val('');
+        applyFilters();
+    });
+
+});
+</script>
+{% endblock extra_js %}

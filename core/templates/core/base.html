@@ -1,0 +1,459 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Mini CRM{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --bs-primary: {{ theme.PRIMARY_COLOR }};
+            --bs-primary-rgb: {{ theme.PRIMARY_COLOR_RGB }};
+        }
+        html, body { height: 100%; }
+        body { padding-top: 56px; background-color: {{ theme.BACKGROUND_COLOR }}; display: flex; flex-direction: column; }
+        .navbar.fixed-top { background-color: var(--bs-primary) !important; }
+        .navbar-brand { font-weight: bold; }
+        #global-search-container { width: 35%; margin-left: 2rem; }
+        .sidebar { position: fixed; top: 56px; bottom: 0; left: 0; z-index: 1000; padding: 20px 0; box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1); width: 220px; background-color: {{ theme.SIDEBAR_COLOR }}; border-right: 1px solid #dee2e6; overflow-y: auto; }
+        .sidebar .nav-link { font-weight: 500; color: #343a40; display: flex; align-items: center; }
+        .sidebar .nav-link .bi { margin-right: 10px; font-size: 1.1rem; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active-parent:hover { color: #000; background-color: rgba(var(--bs-primary-rgb), 0.1); }
+        .sidebar .nav-link.active, .sidebar .submenu .nav-link.active { background-color: var(--bs-primary); color: #fff; }
+        .sidebar .submenu { padding-left: 15px; border-left: 2px solid rgba(var(--bs-primary-rgb), 0.2); }
+        .sidebar .submenu .nav-link { padding-left: 2rem; font-size: 0.9em; }
+        .sidebar .nav-link .bi-chevron-down { font-size: 0.8em; margin-left: auto; transition: transform 0.2s ease-in-out; }
+        .sidebar .nav-link[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
+        .main-content-area { display: flex; flex-direction: column; min-height: calc(100vh - 56px); padding: 20px; font-size: 0.95rem; }
+        @media (min-width: 768px) { .main-content-area { margin-left: 220px; } }
+        .content-body { flex-grow: 1; }
+        .footer { padding: 1rem 0; background-color: #f8f9fa; border-top: 1px solid #dee2e6; text-align: center; margin-top: auto; }
+        .form-label { font-weight: bold; }
+        #custom-context-menu { position: fixed; z-index: 10000; width: 260px; background: #ffffff; border-radius: 5px; padding: 5px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none; }
+        #custom-context-menu ul { list-style: none; padding: 0; margin: 0; }
+        #custom-context-menu ul li { padding: 8px 15px; cursor: pointer; display: flex; align-items: center; font-size: 0.9rem;}
+        #custom-context-menu ul li:hover { background: #f2f2f2; }
+        #custom-context-menu ul li i { margin-right: 10px; color: #555; }
+    </style>
+    {% block extra_css %}{% endblock extra_css %}
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'home' %}">Mini CRM</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="d-none d-md-block" id="global-search-container">
+                <input class="form-control form-control-sm" type="search" id="live-search-input" placeholder="Γρήγορη Αναζήτηση στη Λίστα..." aria-label="Search">
+            </div>
+            <div class="d-flex align-items-center ms-auto">
+                {% if user.is_authenticated %}
+                    <span class="navbar-text me-3 d-none d-lg-block">Γεια, {{ user.get_full_name|default:user.username }}</span>
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Ρυθμίσεις"><i class="bi bi-gear-fill fs-5"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'my_profile' %}"><i class="bi bi-person-fill me-2"></i>Το Προφίλ μου</a></li>
+                            <li><a class="dropdown-item" href="{% url 'password_change' %}"><i class="bi bi-key-fill me-2"></i>Αλλαγή Κωδικού</a></li>
+                            <li><a class="dropdown-item" href="{% url 'user_profile_settings' %}"><i class="bi bi-palette-fill me-2"></i>Εμφάνιση</a></li>
+                            {% if user.is_staff %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'sales_rep_list' %}"><i class="bi bi-person-badge me-2"></i>Διαχείριση Πωλητών</a></li>
+                            <li><a class="dropdown-item" href="{% url 'user_list_view' %}"><i class="bi bi-people-fill me-2"></i>Διαχείριση Χρηστών</a></li>
+                            <li><a class="dropdown-item" href="/admin/" target="_blank"><i class="bi bi-box-arrow-up-right me-2"></i>Django Admin</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <a class="nav-link text-white ps-3" href="{% url 'logout' %}" title="Αποσύνδεση"><i class="bi bi-box-arrow-right fs-5"></i></a>
+                {% else %}
+                    <a class="nav-link text-white" href="{% url 'login' %}">Σύνδεση</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}"><i class="bi bi-house-door-fill"></i>Αρχική</a></li>
+                        <li class="nav-item"><a class="nav-link {% if 'customer' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'customer_list' %}"><i class="bi bi-people-fill"></i>Πελάτες</a></li>
+                        <li class="nav-item"><a class="nav-link {% if 'product' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'product_list' %}"><i class="bi bi-box-seam-fill"></i>Προϊόντα</a></li>
+                        <hr>
+                        <li class="nav-item"><a class="nav-link {% if 'order' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'order_list' %}"><i class="bi bi-receipt-cutoff"></i>Παραγγελίες</a></li>
+                        <li class="nav-item"><a class="nav-link {% if 'retail' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'retail_pos' %}"><i class="bi bi-cart-check-fill"></i>POS Λιανικής</a></li>
+                        <li class="nav-item"><a class="nav-link {% if 'invoice' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'invoice_list' %}"><i class="bi bi-file-earmark-text-fill"></i>Τιμολόγια</a></li>
+                        <hr>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name in 'stock_overview_list,receive_stock,delivery_note_list' %}active-parent{% endif %} collapsed" href="#submenu-warehouse" data-bs-toggle="collapse" aria-expanded="false"><i class="bi bi-archive-fill"></i>Αποθήκη<i class="bi bi-chevron-down"></i></a>
+                            <div class="collapse {% if request.resolver_match.url_name in 'stock_overview_list,receive_stock,delivery_note_list' %}show{% endif %}" id="submenu-warehouse">
+                                <ul class="nav flex-column submenu">
+                                    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'stock_overview_list' %}active{% endif %}" href="{% url 'stock_overview_list' %}"><i class="bi bi-eye-fill"></i>Επισκόπηση</a></li>
+                                    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'receive_stock' %}active{% endif %}" href="{% url 'receive_stock' %}"><i class="bi bi-box-arrow-in-down"></i>Εισαγωγή</a></li>
+                                    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'delivery_note_list' %}active{% endif %}" href="{% url 'delivery_note_list' %}"><i class="bi bi-truck"></i>Δελτία Αποστολής</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name in 'all_payments_list,credit_note_list,commission_report' %}active-parent{% endif %} collapsed" href="#submenu-financials" data-bs-toggle="collapse" aria-expanded="false"><i class="bi bi-cash-stack"></i>Οικονομικά<i class="bi bi-chevron-down"></i></a>
+                            <div class="collapse {% if request.resolver_match.url_name in 'all_payments_list,credit_note_list,commission_report' %}show{% endif %}" id="submenu-financials">
+                                <ul class="nav flex-column submenu">
+                                    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'commission_report' %}active{% endif %}" href="{% url 'commission_report' %}"><i class="bi bi-currency-dollar"></i>Προμήθειες</a></li>
+                                    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'credit_note_list' %}active{% endif %}" href="{% url 'credit_note_list' %}"><i class="bi bi-journal-minus"></i>Πιστωτικά</a></li>
+                                    <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'all_payments_list' %}active{% endif %}" href="{% url 'all_payments_list' %}"><i class="bi bi-card-list"></i>Πληρωμές</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <hr>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'supplier' in request.resolver_match.view_name %}active-parent{% endif %} collapsed" href="#submenu-purchasing" data-bs-toggle="collapse" aria-expanded="false">
+                                <i class="bi bi-cart4"></i>Αγορές<i class="bi bi-chevron-down"></i>
+                            </a>
+                            <div class="collapse {% if 'supplier' in request.resolver_match.view_name or 'purchase_order' in request.resolver_match.view_name %}show{% endif %}" id="submenu-purchasing">
+                                <ul class="nav flex-column submenu">
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if 'supplier' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'supplier_list' %}">
+                                            <i class="bi bi-truck"></i>Προμηθευτές
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {% if 'purchase_order' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'purchase_order_list' %}">
+                                            <i class="bi bi-file-earmark-text"></i>Εντολές Αγοράς
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'reports' in request.path %}active{% endif %}" href="{% url 'reporting_hub' %}">
+                                <i class="bi bi-bar-chart-line-fill"></i>Αναφορές
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-md-auto col-lg-10 main-content-area">
+                <div class="content-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {% block content %}{% endblock %}
+                </div>
+                <footer class="footer">
+                    <div class="container text-center">
+                        <span class="text-muted">© {% now "Y" %} Mini CRM Project - Λάζαρος</span>
+                    </div>
+                </footer>
+            </main>
+        </div>
+    </div>
+    
+    <div id="custom-context-menu">
+        <ul>
+            <li data-action="view" data-action-type="all"><i class="bi bi-eye"></i>Προβολή</li>
+            <li data-action="edit" data-action-type="all"><i class="bi bi-pencil"></i>Επεξεργασία</li>
+            <li data-action="pdf" data-action-type="all"><i class="bi bi-printer"></i>Εκτύπωση PDF</li>
+            <hr data-action-type="all">
+            <li data-action="quick_stock_entry" data-action-type="product"><i class="bi bi-box-arrow-in-down"></i>Γρήγορη Εισαγωγή Αποθέματος</li>
+            <li data-action="change-status" data-new-status="processing" data-action-type="order"><i class="bi bi-gear-wide-connected"></i>Σήμανση ως 'Σε Επεξεργασία'</li>
+            <li data-action="change-status" data-new-status="completed" data-action-type="order"><i class="bi bi-check2-circle"></i>Σήμανση ως 'Ολοκληρωμένη'</li>
+            <li data-action="change-status" data-new-status="cancelled" data-action-type="order"><i class="bi bi-x-circle text-danger"></i>Σήμανση ως 'Ακυρωμένη'</li>
+            <li data-action="copy_order" data-action-type="order"><i class="bi bi-clipboard-plus"></i>Αντιγραφή Παραγγελίας</li>
+            <li data-action="mark_as_paid" data-action-type="invoice"><i class="bi bi-check-circle-fill text-success"></i>Σήμανση ως Εξοφλημένο</li>
+            <li data-action="create_credit_note" data-action-type="invoice"><i class="bi bi-journal-minus"></i>Έκδοση Πιστωτικού</li>
+            <li data-action="new_order_from_customer" data-action-type="customer"><i class="bi bi-receipt-cutoff"></i>Νέα Παραγγελία</li>
+            <li data-action="financials" data-action-type="customer"><i class="bi bi-wallet2"></i>Οικονομική Καρτέλα</li>
+            <li data-action="cancel_payment" data-action-type="payment"><i class="bi bi-x-octagon"></i>Ακύρωση Πληρωμής</li>
+            <hr data-action-type="all">
+            <li data-action="delete" data-action-type="all" style="color: red;"><i class="bi bi-trash"></i>Διαγραφή</li>
+            <li data-action="history" data-action-type="product"><i class="bi bi-clock-history"></i>Ιστορικό Κινήσεων</li>
+            <li data-action="email_invoice" data-action-type="invoice"><i class="bi bi-envelope-fill"></i>Αποστολή με Email</li>
+            <li data-action="new_purchase_order" data-action-type="supplier"><i class="bi bi-cart-plus"></i>Νέα Εντολή Αγοράς</li>
+            <li data-action="view_purchase_orders" data-action-type="supplier"><i class="bi bi-card-list"></i>Προβολή Εντολών Αγοράς</li>
+        </ul>
+    </div>
+
+    <div class="modal fade" id="quickStockModal" tabindex="-1" aria-labelledby="quickStockModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title" id="quickStockModalLabel">Γρήγορη Εισαγωγή Αποθέματος</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <form id="quick-stock-form">
+                    <div class="modal-body">
+                        <p>Προϊόν: <strong id="quick-stock-product-name"></strong></p>
+                        <input type="hidden" id="quick-stock-product-id" name="product_id">
+                        <div class="mb-3">
+                            <label for="quick-stock-quantity" class="form-label">Ποσότητα Παραλαβής:</label>
+                            <input type="number" class="form-control" id="quick-stock-quantity" name="quantity_added" required step="0.01">
+                        </div>
+                        <div id="quick-stock-error" class="text-danger small"></div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button><button type="submit" class="btn btn-primary">Αποθήκευση</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    {% block extra_js %}
+    <script>
+    $(document).ready(function() {
+        const formToTrack = $('form.dirty-check-form');
+        if (formToTrack.length > 0) {
+            let isDirty = false; let formSubmitted = false;
+            formToTrack.on('submit', function() { formSubmitted = true; });
+            formToTrack.on('change keyup', 'input, select, textarea', function() { isDirty = true; });
+            $(window).on('beforeunload', function(e) { if (isDirty && !formSubmitted) { const msg = 'Οι αλλαγές που κάνατε ίσως να μην αποθηκευτούν.'; e.returnValue = msg; return msg; } });
+        }
+        $('form.delete-form').on('submit', function(event) {
+            event.preventDefault();
+            let itemType = $(this).data('item-type') || 'αυτό το στοιχείο';
+            let itemName = $(this).data('item-name') ? ` (${$(this).data('item-name')})` : '';
+            const message = `Είστε σίγουρος/η ότι θέλετε να διαγράψετε ${itemType}${itemName};`;
+            if (confirm(message) && confirm('Είστε ΠΡΑΓΜΑΤΙΚΑ σίγουρος/η; Η ενέργεια αυτή είναι μόνιμη και δεν αναιρείται!')) { this.submit(); }
+        });
+        function normalizeText(text) { if (!text) return ""; return text.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
+        $('#live-search-input').on('keyup', function() {
+            const searchTerm = normalizeText($(this).val().trim());
+            $('.searchable-row').each(function() {
+                const rowText = normalizeText($(this).text());
+                if (rowText.includes(searchTerm)) { $(this).show(); } else { $(this).hide(); }
+            });
+        });
+        const contextMenu = $('#custom-context-menu');
+        let currentContextId = null;
+        let currentContextDataType = null;
+        let currentContextElement = null;
+        $(document).on('contextmenu', '.has-context-menu', function(event) {
+            event.preventDefault(); 
+            currentContextElement = this;
+            currentContextId = $(this).data('id');
+            currentContextDataType = $(this).data('type');
+            if (!currentContextId || !currentContextDataType) return;
+            contextMenu.find('li, hr').hide();
+            contextMenu.find(`[data-action-type="${currentContextDataType}"], [data-action-type="all"]`).show();
+            contextMenu.find('hr').each(function() {
+                if ($(this).prev('li:visible').length > 0 && $(this).next('li:visible').length > 0) { $(this).show(); }
+            });
+            const menuWidth = contextMenu.outerWidth(), menuHeight = contextMenu.outerHeight();
+            const windowWidth = $(window).width(), windowHeight = $(window).height();
+            let topPosition = event.clientY, leftPosition = event.clientX;
+            if (event.clientY + menuHeight > windowHeight) { topPosition = event.clientY - menuHeight; }
+            if (event.clientX + menuWidth > windowWidth) { leftPosition = event.clientX - menuWidth; }
+            contextMenu.css({ top: topPosition + 'px', left: leftPosition + 'px' }).show();
+        });
+        contextMenu.on('click', 'li', function() {
+            
+            if (!currentContextId) return;
+            const action = $(this).data('action');
+            const csrfToken = $('input[name="csrfmiddlewaretoken"]').first().val();
+            let url = '';
+
+            // --- ΔΙΟΡΘΩΣΗ: Επαναφέρουμε την αρχική δομή if/else if/else ---
+
+            if (action === 'history') {
+                const productName = $(currentContextElement).find('td:first a').text().trim();
+                $('#productHistoryModalLabel').text(`Ιστορικό Κινήσεων: ${productName}`);
+                $('#product-history-content').html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                const historyModal = new bootstrap.Modal(document.getElementById('productHistoryModal'));
+                historyModal.show();
+                $.ajax({
+                    url: `/ajax/products/${currentContextId}/history/`
+                }).done(function(response) {
+                    $('#product-history-content').html(response.html);
+                }).fail(function(){
+                    $('#product-history-content').html('<p class="text-danger">Σφάλμα κατά τη φόρτωση του ιστορικού.</p>');
+                });
+            } 
+            else if (action === 'email_invoice') {
+                const invoiceNumber = $(currentContextElement).find('td:first a').text().trim();
+                const customerEmail = $(currentContextElement).data('email'); // Θα χρειαστεί να προσθέσουμε το data-email στο template της λίστας τιμολογίων
+                const customerName = $(currentContextElement).find('td').eq(2).text().trim();
+                $('#email-invoice-id').val(currentContextId);
+                $('#email-to').val(customerEmail);
+                $('#email-subject').val(`Τιμολόγιο: ${invoiceNumber}`);
+                $('#email-body').val(`Αγαπητέ/ή ${customerName},\n\nΣας αποστέλλουμε συνημμένο το τιμολόγιο ${invoiceNumber}.\n\nΜε εκτίμηση,\n{{ company_info.NAME }}`);
+                const emailModal = new bootstrap.Modal(document.getElementById('emailInvoiceModal'));
+                emailModal.show();
+            }
+            else if (action === 'quick_stock_entry') {
+                const productName = $(currentContextElement).find('td:first a').text().trim() || $(currentContextElement).find('td:first').text().trim();
+                $('#quick-stock-product-name').text(productName);
+                $('#quick-stock-product-id').val(currentContextId);
+                const quickStockModal = new bootstrap.Modal(document.getElementById('quickStockModal'));
+                quickStockModal.show();
+            }
+            else if (action === 'change-status') {
+                if (!csrfToken) { alert('Σφάλμα CSRF. Ανανεώστε τη σελίδα.'); contextMenu.hide(); return; }
+                const newStatus = $(this).data('new-status');
+                if (confirm(`Είστε σίγουροι ότι θέλετε να αλλάξετε την κατάσταση σε '${$(this).text().trim()}'?`)) {
+                    $.ajax({
+                        url: `/ajax/orders/${currentContextId}/change-status/`, method: 'POST',
+                        data: { 'csrfmiddlewaretoken': csrfToken, 'new_status': newStatus },
+                        dataType: 'json'
+                    }).done(function(response) {
+                        if (response.success) {
+                            const row = $(`.has-context-menu[data-id="${currentContextId}"]`);
+                            const badge = row.find('.status-badge');
+                            if (badge.length) {
+                                badge.text(response.new_status_display);
+                                badge.removeClass('bg-primary bg-warning bg-success bg-danger text-dark').addClass({'pending': 'bg-warning text-dark', 'processing': 'bg-primary', 'completed': 'bg-success', 'cancelled': 'bg-danger'}[response.new_status_code] || 'bg-secondary');
+                            }
+                        } else { alert('Σφάλμα: ' + response.error); }
+                    }).fail(function() { alert('Προέκυψε ένα σφάλμα δικτύου.'); });
+                }
+            }
+            else if (action === 'mark_as_paid') {
+                if (!csrfToken) { alert('Σφάλμα CSRF. Ανανεώστε τη σελίδα.'); contextMenu.hide(); return; }
+                if (confirm('Είστε σίγουροι; Θα δημιουργηθεί αυτόματη πληρωμή.')) {
+                    const form = $('<form>', { action: `/invoices/${currentContextId}/mark-as-paid/`, method: 'POST' });
+                    form.append($('<input>', { type: 'hidden', name: 'csrfmiddlewaretoken', value: csrfToken }));
+                    $('body').append(form); form.submit();
+                }
+            }
+            else if (action === 'delete') {
+                 const deleteForm = $(`.has-context-menu[data-id='${currentContextId}']`).find('form.delete-form');
+                 if (deleteForm.length) { deleteForm.trigger('submit'); }
+                 else { alert('Δεν βρέθηκε φόρμα διαγραφής για αυτό το στοιχείο.'); }
+            }
+            else {
+                // Εδώ μπαίνει το switch ΜΟΝΟ για τις ενέργειες που αλλάζουν σελίδα
+                switch(action) {
+                    case 'view':
+                        if (currentContextDataType === 'customer') url = `/customers/${currentContextId}/`;
+                        else if (currentContextDataType === 'product') url = `/products/${currentContextId}/`;
+                        else if (currentContextDataType === 'order') url = `/orders/${currentContextId}/`;
+                        else if (currentContextDataType === 'invoice') url = `/invoices/${currentContextId}/`;
+                        else if (currentContextDataType === 'delivery_note') url = `/delivery-notes/${currentContextId}/`;
+                        else if (currentContextDataType === 'supplier') url = `/suppliers/${currentContextId}/`;
+                        else if (currentContextDataType === 'purchase_order') url = `/purchase-orders/${currentContextId}/`;
+                        break;
+                    case 'edit':
+                        if (currentContextDataType === 'customer') url = `/customers/${currentContextId}/edit/`;
+                        else if (currentContextDataType === 'product') url = `/products/${currentContextId}/edit/`;
+                        else if (currentContextDataType === 'order') url = `/orders/${currentContextId}/edit/`;
+                        else if (currentContextDataType === 'payment') url = `/payments/${currentContextId}/edit/`;
+                        else if (currentContextDataType === 'supplier') url = `/suppliers/${currentContextId}/edit/`;
+                        else if (currentContextDataType === 'purchase_order') url = `/purchase-orders/${currentContextId}/edit/`;
+                        break;
+                    case 'pdf':
+                        if (currentContextDataType === 'order') url = `/orders/${currentContextId}/pdf/`;
+                        else if (currentContextDataType === 'invoice') url = `/invoices/${currentContextId}/pdf/`;
+                        else if (currentContextDataType === 'payment') url = `/payments/${currentContextId}/receipt/`;
+                        else if (currentContextDataType === 'delivery_note') url = `/delivery-notes/${currentContextId}/pdf/`;
+                        break;
+                    case 'financials': if (currentContextDataType === 'customer') url = `/customers/${currentContextId}/financials/`; break;
+                    case 'new_order_from_customer': if (currentContextDataType === 'customer') url = `/orders/new/?customer_id=${currentContextId}`; break;
+                    case 'cancel_payment': if (currentContextDataType === 'payment') url = `/payments/${currentContextId}/cancel/`; break;
+                    case 'copy_order': if (currentContextDataType === 'order') url = `/orders/${currentContextId}/copy/`; break;
+                    case 'order_from_invoice': url = `/invoices/${currentContextId}/create-order/`; break;
+                    case 'create_credit_note': url = `/invoices/${currentContextId}/create-credit-note/`; break;
+                    case 'new_purchase_order':
+                        if (currentContextDataType === 'supplier') url = `/purchase-orders/new/?supplier_id=${currentContextId}`;
+                        break;
+                    case 'view_purchase_orders':
+                        if (currentContextDataType === 'supplier') url = `/purchase-orders/?supplier=${currentContextId}`;
+                        break;
+                }
+                if (url) {
+                    if (action === 'pdf') { window.open(url, '_blank'); } else { window.location.href = url; }
+                }
+            }
+            
+            contextMenu.hide();
+        });
+
+        $(document).on('click', function(event) {
+            if (!$(event.target).closest('#custom-context-menu').length) {
+                if (contextMenu.is(':visible')) { contextMenu.hide(); }
+            }
+        });
+
+        $('#quick-stock-form').on('submit', function(e) {
+            e.preventDefault();
+            const form = $(this); const productId = form.find('#quick-stock-product-id').val();
+            const quantity = form.find('#quick-stock-quantity').val();
+            const csrfToken = form.find('input[name="csrfmiddlewaretoken"]').val() || $('input[name="csrfmiddlewaretoken"]').first().val();
+            const errorDiv = form.find('#quick-stock-error');
+            $.ajax({
+                url: `/ajax/products/${productId}/quick-stock-entry/`,
+                method: 'POST', data: { 'csrfmiddlewaretoken': csrfToken, 'quantity_added': quantity },
+                dataType: 'json'
+            }).done(function(response) {
+                if(response.success) {
+                    const row = $(`.has-context-menu[data-id="${productId}"]`);
+                    const stockCell = row.find('.stock-quantity-cell');
+                    if(stockCell.length) {
+                        const currentText = stockCell.text(); const unit = currentText.split(' ').slice(1).join(' ');
+                        stockCell.html(`<strong>${parseFloat(response.new_stock).toFixed(2)}</strong> ${unit}`);
+                    }
+                    const quickStockModal = bootstrap.Modal.getInstance(document.getElementById('quickStockModal'));
+                    quickStockModal.hide(); form[0].reset(); errorDiv.text('');
+                } else { errorDiv.text(response.error); }
+            }).fail(function() { errorDiv.text('Σφάλμα επικοινωνίας με τον server.'); });
+        });
+    });
+    </script>
+    {% endblock extra_js %}
+    <div class="modal fade" id="productHistoryModal" tabindex="-1" aria-labelledby="productHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="productHistoryModalLabel">Ιστορικό Κινήσεων</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="product-history-content">
+              <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Κλείσιμο</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <div class="modal fade" id="emailInvoiceModal" tabindex="-1" aria-labelledby="emailInvoiceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="emailInvoiceModalLabel">Αποστολή Τιμολογίου με Email</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="email-invoice-form">
+                <div class="modal-body">
+                    <input type="hidden" id="email-invoice-id" name="invoice_id">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="email-to" class="form-label">Προς (Email):</label>
+                        <input type="email" class="form-control" id="email-to" name="to_email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email-subject" class="form-label">Θέμα:</label>
+                        <input type="text" class="form-control" id="email-subject" name="subject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email-body" class="form-label">Κείμενο Μηνύματος:</label>
+                        <textarea class="form-control" id="email-body" name="body" rows="6"></textarea>
+                    </div>
+                    <div id="email-invoice-error" class="text-danger small"></div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
+                  <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill me-2"></i>Αποστολή</button>
+                </div>
+            </form>
+          </div>
+        </div>
+      </div>    
+</body>
+</html>

@@ -1,0 +1,58 @@
+{% comment %}
+Αυτό το partial template δέχεται ένα context variable με το όνομα 'page_obj',
+το οποίο πρέπει να είναι το αντικείμενο Page του Paginator από τη view.
+Παράδειγμα χρήσης στο κυρίως template:
+{% include "core/partials/pagination_controls.html" with page_obj=my_paginated_list %}
+{% endcomment %}
+
+{% if page_obj.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {# Κουμπιά 'Πρώτη' και 'Προηγούμενη' #}
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">&laquo;&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">&laquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+
+            {# Αριθμοί Σελίδων με λογική για ... #}
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %} {# Εμφάνισε μερικές σελίδες γύρω από την τρέχουσα #}
+                    <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                {% elif forloop.first or forloop.last %}
+                     {# Απλή λογική για να εμφανίζει ... αν είμαστε μακριά από την αρχή ή το τέλος #}
+                     {% if i == 1 and page_obj.number > 4 %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                     {% elif i == page_obj.paginator.num_pages and page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                     {% elif i == 1 and page_obj.number <= 4 and page_obj.number != 1 %} {# Εξασφαλίζει ότι η πρώτη σελίδα είναι πάντα ορατή αν είμαστε στις πρώτες σελίδες #}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                     {% elif i == page_obj.paginator.num_pages and page_obj.number >= page_obj.paginator.num_pages|add:'-3' and page_obj.number != page_obj.paginator.num_pages %} {# Εξασφαλίζει ότι η τελευταία σελίδα είναι πάντα ορατή αν είμαστε στις τελευταίες σελίδες #}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                     {% endif %}
+                {% endif %}
+            {% endfor %}
+
+            {# Κουμπιά 'Επόμενη' και 'Τελευταία' #}
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">&raquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&amp;{{ key }}={{ value|urlencode }}{% endif %}{% endfor %}">&raquo;&raquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}

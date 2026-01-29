@@ -1,0 +1,102 @@
+{# core/templates/core/customers_list.html #}
+
+{% extends "core/base.html" %}
+
+{% block title %}Λίστα Πελατών{% endblock %}
+
+{% block content %}
+
+<p><a href="{% url 'customer_create' %}" class="btn btn-primary">➕ Προσθήκη Νέου Πελάτη</a>
+    <a href="{% url 'export_customers_excel' %}?q={{ request.GET.q|default:'' }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+    </a>
+</p>
+<form method="get" action="{% url 'customer_list' %}" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" value="{{ request.GET.q|default:'' }}" class="form-control" placeholder="Αναζήτηση με όνομα, εταιρεία, κωδικό...">
+        <button type="submit" class="btn btn-outline-secondary">Αναζήτηση</button>
+        {% if request.GET.q %}
+            <a href="{% url 'customer_list' %}" class="btn btn-outline-danger">Καθαρισμός</a>
+        {% endif %}
+    </div>
+</form>
+<hr class="mb-4">
+
+
+<h2>👤 Λίστα Πελατών</h2>
+
+<style>
+    .customer-list ul { list-style-type: none; padding-left: 0; }
+    .customer-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0; /* Λίγο μικρότερο padding */
+        border-bottom: 1px solid #dee2e6; /* Χρώμα Bootstrap για border */
+    }
+    .customer-list li:last-child { border-bottom: none; }
+
+    .customer-item-name {
+        flex-grow: 1;
+        margin-right: 1rem; /* Bootstrap spacing unit */
+    }
+    .customer-item-name a {
+        text-decoration: none;
+        color: #212529; /* Bootstrap default text color */
+        font-weight: 500; /* Λίγο πιο έντονο */
+    }
+    .customer-item-name a:hover {
+        color: #0056b3; /* Πιο σκούρο μπλε στο hover */
+    }
+    .customer-code { /* Πρόσθετη κλάση για τον κωδικό για διακριτό styling αν χρειαστεί */
+        font-size: 0.875em;
+        color: #6c757d; /* Bootstrap secondary text color */
+    }
+
+    .customer-actions-inline {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem; /* Bootstrap spacing unit */
+    }
+    /* Χρησιμοποιούμε τις κλάσεις btn της Bootstrap για συνέπεια */
+    .customer-actions-inline .btn-icon { /* Για εικονίδια επεξεργασίας/διαγραφής */
+        padding: 0.375rem 0.75rem; /* Τυπικό padding για sm buttons */
+    }
+</style>
+
+{% if customers %}
+    <div class="customer-list">
+        <ul>
+            {% for customer in customers %}
+                
+                <li class="searchable-row has-context-menu" data-id="{{ customer.pk }}" data-type="customer">    
+                    <div class="customer-item-name">
+                         <a href="{% url 'customer_detail' customer.pk %}">
+                             {{ customer.first_name }} {{ customer.last_name }} {% if customer.company_name %}({{ customer.company_name }}){% endif %}
+                         </a>
+                         <div class="customer-code">Κωδικός: {{ customer.code }}</div>
+                    </div>
+
+                    <div class="customer-actions-inline">
+                        <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-sm btn-outline-primary btn-icon" title="Επεξεργασία">✏️</a>
+                        <form action="{% url 'customer_delete' customer.pk %}" method="post" class="delete-form d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" title="Διαγραφή">🗑️</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% include "core/partials/pagination_controls.html" with page_obj=customers %}
+{% else %}
+    <div class="alert alert-info mt-3" role="alert">
+        {% if request.GET.q %}
+            Δεν βρέθηκαν πελάτες για την αναζήτηση "{{ request.GET.q }}".
+        {% else %}
+            Δεν υπάρχουν πελάτες καταχωρημένοι.
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}

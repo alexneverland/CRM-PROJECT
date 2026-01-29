@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-cart4 me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'purchase_order_pdf' po.pk %}" class="btn btn-sm btn-info me-2" target="_blank"><i class="bi bi-printer"></i> Εκτύπωση PDF</a> <a href="{% url 'purchase_order_edit' po.pk %}" class="btn btn-sm btn-primary me-2"><i class="bi bi-pencil-square"></i> Επεξεργασία</a>
+            <form action="{% url 'purchase_order_delete' po.pk %}" method="post" class="delete-form d-inline" data-item-type="την εντολή αγοράς" data-item-name="{{ po.po_number|escapejs }}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Διαγραφή</button>
+            </form>
+            <a href="{% url 'purchase_order_list' %}" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left-circle"></i> Επιστροφή στη Λίστα</a>
+        </div>
+    </div>
+    <div class="card p-3 mb-3">
+        <div class="row">
+            <div class="col-md-6"><p><strong>Προμηθευτής:</strong> {{ po.supplier.name }}</p></div>
+            <div class="col-md-6"><p><strong>Ημερομηνία Εντολής:</strong> {{ po.order_date|date:"d/m/Y" }}</p></div>
+            <div class="col-md-6"><p><strong>Κατάσταση:</strong> <span class="badge bg-secondary">{{ po.get_status_display }}</span></p></div>
+        </div>
+    </div>
+
+    <div class="card mt-2">
+        <div class="card-header"><h5 class="mb-0">Είδη Παραγγελίας</h5></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Προϊόν</th>
+                            <th class="text-center">Ποσότητα</th>
+                            <th class="text-end">Κόστος Μονάδας (€)</th>
+                            <th class="text-end pe-3">Συνολικό Κόστος (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in po.items.all %}
+                        <tr>
+                            <td class="ps-3">{{ item.product.name }}</td>
+                            <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                            <td class="text-end">{{ item.cost_price|floatformat:2 }}</td>
+                            <td class="text-end pe-3 fw-bold">{{ item.total_cost|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <td colspan="3" class="text-end fw-bold">Γενικό Σύνολο:</td>
+                            <td class="text-end pe-3 fw-bold h5 mb-0">{{ po.total_amount|floatformat:2 }} €</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

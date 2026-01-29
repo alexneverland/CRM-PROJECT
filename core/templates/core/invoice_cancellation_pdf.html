@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Ακυρωτικό για Τιμολόγιο {{ invoice.invoice_number }}</title>
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 11pt; }
+        .header h1 { font-size: 22pt; color: #d9534f; border: 3px solid #d9534f; padding: 10px; text-align: center; }
+        .content p { line-height: 1.6; font-size: 12pt; }
+        .label { font-weight: bold; }
+        .invoice-details { border: 1px solid #ccc; padding: 15px; background-color: #f9f9f9; }
+        .invoice-details p { font-size: 11pt; margin: 4px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ΑΚΥΡΩΤΙΚΟ ΣΗΜΕΙΩΜΑ</h1>
+    </div>
+    <div class="content">
+        <p>Με το παρόν, βεβαιώνεται η ακύρωση του παρακάτω παραστατικού:</p>
+        <div class="invoice-details">
+            <p><span class="label">Είδος Παραστατικού:</span> Τιμολόγιο Πώλησης</p>
+            <p><span class="label">Αριθμός Παραστατικού:</span> {{ invoice.invoice_number }}</p>
+            
+            {# --- ΝΕΑ ΠΡΟΣΘΗΚΗ --- #}
+            {% with order=invoice.order|default:invoice.delivery_note.order %}
+                {% if order %}
+                <p><span class="label">Σχετική Παραγγελία:</span> {{ order.order_number }}</p>
+                {% endif %}
+            {% endwith %}
+
+            <p><span class="label">Ημερομηνία Έκδοσης:</span> {{ invoice.issue_date|date:"d/m/Y" }}</p>
+            <p><span class="label">Πελάτης:</span> {{ invoice.customer }} (ΑΦΜ: {{ invoice.customer.vat_number }})</p>
+            <p><span class="label">Συνολικό Ποσό:</span> {{ invoice.total_amount|floatformat:2 }} €</p>
+            <p><span class="label">ΜΑΡΚ (προς ακύρωση):</span> {{ invoice.mark|default:"(Δεν είχε εκδοθεί)" }}</p>
+        </div>
+        <p>Η ακύρωση πραγματοποιήθηκε αυθημερόν και η αντίστοιχη οικονομική συναλλαγή έχει αντιλογιστεί πλήρως.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{% comment %} core/templates/core/purchase_order_pdf.html {% endcomment %}
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Εντολή Αγοράς - {{ po.po_number }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #333; }
+        .header h1 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; font-size: 16pt; }
+        .details-grid { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
+        .details-grid td { width: 50%; vertical-align: top; padding: 5px; }
+        .label { font-weight: bold; }
+        .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .items-table th, .items-table td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+        .items-table th { background-color: #e9e9e9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .summary-section { margin-top: 20px; page-break-inside: avoid; }
+        .summary-table { float: right; width: 45%; border-collapse: collapse; }
+        .summary-table td { padding: 4px; }
+        .grand-total td { font-size: 14pt; font-weight: bold; border-top: 2px solid #000; padding-top: 5px; }
+        .clear { clear: both; }
+        p { margin: 3px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ΕΝΤΟΛΗ ΑΓΟΡΑΣ</h1>
+        </div>
+        
+        <table class="details-grid">
+            <tr>
+                <td>
+                    <p><span class="label">ΠΡΟΣ:</span></p>
+                    <p>{{ po.supplier.name }}</p>
+                    <p>{{ po.supplier.address|default:'' }}</p>
+                    <p>{{ po.supplier.city|default:'' }}, {{ po.supplier.postal_code|default:'' }}</p>
+                    <p><span class="label">Α.Φ.Μ.:</span> {{ po.supplier.vat_number|default:'-' }}</p>
+                </td>
+                <td class="text-right">
+                    <p><span class="label">Αρ. Εντολής:</span> {{ po.po_number }}</p>
+                    <p><span class="label">Ημερομηνία:</span> {{ po.order_date|date:"d/m/Y" }}</p>
+                    <p><span class="label">Κατάσταση:</span> {{ po.get_status_display }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width:10%;">Κωδικός</th>
+                    <th style="width:45%;">Περιγραφή Είδους</th>
+                    <th class="text-center" style="width:15%;">Ποσότητα</th>
+                    <th class="text-right" style="width:15%;">Τιμή Κόστους</th>
+                    <th class="text-right" style="width:15%;">Σύνολο</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in po.items.all %}
+                <tr>
+                    <td>{{ item.product.code|default:'-' }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                    <td class="text-right">{{ item.cost_price|floatformat:2 }} €</td>
+                    <td class="text-right">{{ item.total_cost|floatformat:2 }} €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="summary-section">
+            <table class="summary-table">
+                <tr class="grand-total">
+                    <td class="label">Γενικό Σύνολο:</td>
+                    <td class="text-right">{{ po.total_amount|floatformat:2 }} €</td>
+                </tr>
+            </table>
+            <div class="clear"></div>
+        </div>
+    </div>
+</body>
+</html>

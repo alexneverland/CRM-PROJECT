@@ -1,0 +1,13 @@
+# Python & Django junk
+*.pyc
+__pycache__/
+db.sqlite3
+media/
+staticfiles/
+
+# Virtual Environment (Δεν το ανεβάζουμε ποτέ!)
+venv/
+env/
+
+# Secrets (ΑΥΤΟ ΕΙΝΑΙ ΤΟ ΣΗΜΑΝΤΙΚΟΤΕΡΟ)
+.env

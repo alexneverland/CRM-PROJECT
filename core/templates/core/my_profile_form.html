@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4"><i class="bi bi-person-fill me-2"></i>{{ title }}</h1>
+    <p>Από εδώ μπορείτε να αλλάξετε τα βασικά στοιχεία του λογαριασμού σας.</p>
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Αποθήκευση Αλλαγών</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

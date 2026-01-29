@@ -1,0 +1,231 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Καρτέλα: {{ customer.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-person-lines-fill me-2"></i>Καρτέλα Πελάτη: {{ customer.get_full_name }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+             <a href="{% url 'customer_payment_create' customer.pk %}" class="btn btn-sm btn-outline-success me-2">
+                <i class="bi bi-plus-circle-dotted"></i> Προσθήκη Πληρωμής
+            </a>
+            <a href="{% url 'customer_financial_detail' customer.pk %}" class="btn btn-sm btn-outline-info me-2">
+                <i class="bi bi-wallet2"></i> Οικονομική Καρτέλα
+            </a>
+            <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil-square"></i> Επεξεργασία Πελάτη
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">Βασικά Στοιχεία & Στοιχεία Χρέωσης</div>
+                <div class="card-body">
+                    <p><strong>Κωδικός:</strong> {{ customer.code }}</p>
+                    <p><strong>Εταιρεία:</strong> {{ customer.company_name|default:"-" }}</p>
+                    <p><strong>Email:</strong> {{ customer.email|default:"-" }}</p>
+                    <p><strong>Τηλέφωνο:</strong> {{ customer.phone|default:"-" }}</p>
+                    <p><strong>Διεύθυνση:</strong> {{ customer.address|default:"-" }}, {{ customer.postal_code|default:"" }} {{ customer.city|default:"" }}</p>
+                    <p><strong>Α.Φ.Μ.:</strong> {{ customer.vat_number|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">Στοιχεία Αποστολής & Επικοινωνίας</div>
+                <div class="card-body">
+                     <p><strong>Κύρια Διεύθυνση:</strong> {{ customer.address|default:"-" }}</p>
+                     <p><strong>Υπεύθυνος Επικοινωνίας:</strong> {{ customer.contact_person_name|default:"-" }}</p>
+                     <p><strong>Τηλ. Επικοινωνίας:</strong> {{ customer.contact_person_phone|default:"-" }}</p>
+                     <p><strong>Email Επικοινωνίας:</strong> {{ customer.contact_person_email|default:"-" }}</p>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-lg-7">
+                    <div class="card">
+                        <div class="card-header"><i class="bi bi-paperclip me-2"></i>Επισυναπτόμενα Αρχεία ({{ attachments.count }})</div>
+                        <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                            {% if attachments %}
+                                <ul class="list-group list-group-flush">
+                                    {% for att in attachments %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <a href="{{ att.file.url }}" target="_blank">{{ att }}</a>
+                                                <small class="d-block text-muted">{{ att.description|default:'' }} (από {{ att.uploaded_by.username }} στις {{ att.uploaded_at|date:"d/m/Y" }})</small>
+                                            </div>
+                                            {# Θα προσθέσουμε τη διαγραφή αργότερα αν θέλεις #}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted text-center mb-0">Δεν υπάρχουν επισυναπτόμενα αρχεία για αυτόν τον πελάτη.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card">
+                        <div class="card-header"><i class="bi bi-upload me-2"></i>Ανέβασμα Νέου Αρχείου</div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                {{ attachment_form.as_p }}
+                                <button type="submit" name="upload_file" class="btn btn-primary btn-sm mt-2 w-100">Ανέβασμα</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Ιστορικό Κινήσεων</h4>
+                <form method="get" action="{% url 'customer_detail' customer.pk %}" class="d-flex">
+                    <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Αναζήτηση σε Αρ. Παρ/Τιμ/ΔΑ..." value="{{ query|default:'' }}" aria-label="Search">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">🔍</button>
+                </form>
+            </div>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-tab-pane" type="button" role="tab" aria-controls="orders-tab-pane" aria-selected="true">
+                        <i class="bi bi-receipt-cutoff"></i> Παραγγελίες ({{ customer_orders.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="invoices-tab" data-bs-toggle="tab" data-bs-target="#invoices-tab-pane" type="button" role="tab" aria-controls="invoices-tab-pane" aria-selected="false">
+                        <i class="bi bi-file-earmark-text"></i> Τιμολόγια ({{ customer_invoices.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="delivery-notes-tab" data-bs-toggle="tab" data-bs-target="#delivery-notes-tab-pane" type="button" role="tab" aria-controls="delivery-notes-tab-pane" aria-selected="false">
+                        <i class="bi bi-truck"></i> Δελτία Αποστολής ({{ customer_delivery_notes.count }})
+                    </button>
+                </li>
+                {% if branches %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="branches-tab" data-bs-toggle="tab" data-bs-target="#branches-tab-pane" type="button" role="tab" aria-controls="branches-tab-pane" aria-selected="false">
+                        <i class="bi bi-diagram-3"></i> Υποκαταστήματα ({{ branches.count }})
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+    
+            <div class="tab-content" id="myTabContent">
+                {# --- ΚΑΡΤΕΛΑ ΠΑΡΑΓΓΕΛΙΩΝ (ΔΙΟΡΘΩΜΕΝΗ) --- #}
+                <div class="tab-pane fade show active" id="orders-tab-pane" role="tabpanel" aria-labelledby="orders-tab" tabindex="0">
+                    <div class="table-responsive mt-3">
+                        <div class="text-end mb-2">
+                            <a href="{% url 'order_list' %}?customer_filter={{ customer.pk }}" class="btn btn-link btn-sm">Προβολή όλων & Αναλυτικά Φίλτρα &raquo;</a>
+                        </div>
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Αρ. Παραγγελίας</th><th>Ημερομηνία</th><th>Κατάσταση</th><th class="text-end">Ποσό</th><th class="text-center">Ενέργειες</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in customer_orders %}
+                                    <tr>
+                                        <td><a href="{% url 'order_detail' order.pk %}">{{ order.order_number }}</a></td>
+                                        <td>{{ order.order_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <span class="badge {% if order.status == order.STATUS_COMPLETED %}bg-success{% elif order.status == order.STATUS_PENDING %}bg-warning text-dark{% elif order.status == order.STATUS_PROCESSING %}bg-primary{% elif order.status == order.STATUS_CANCELLED %}bg-danger{% else %}bg-secondary{% endif %}">{{ order.get_status_display }}</span>
+                                        </td>
+                                        <td class="text-end">{{ order.total_amount|floatformat:2 }} €</td>
+                                        <td class="text-center"><a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a></td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="5" class="text-center p-4">Δεν βρέθηκαν παραγγελίες.</td></tr>
+                                {% endfor %}
+                                {% if branches %}
+                                <div class="tab-pane fade" id="branches-tab-pane" role="tabpanel" aria-labelledby="branches-tab" tabindex="0">
+                                    <div class="list-group mt-3">
+                                        {% for branch in branches %}
+                                            <a href="{% url 'customer_detail' branch.pk %}" class="list-group-item list-group-item-action">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h5 class="mb-1">{{ branch.company_name|default:branch.get_full_name }}</h5>
+                                                    <small>Κωδικός: {{ branch.code }}</small>
+                                                </div>
+                                                <p class="mb-1">{{ branch.address|default:'-' }}, {{ branch.city|default:'' }}</p>
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+    
+                {# --- ΚΑΡΤΕΛΑ ΤΙΜΟΛΟΓΙΩΝ (ΔΙΟΡΘΩΜΕΝΗ) --- #}
+                <div class="tab-pane fade" id="invoices-tab-pane" role="tabpanel" aria-labelledby="invoices-tab" tabindex="0">
+                    <div class="table-responsive mt-3">
+                         <div class="text-end mb-2">
+                            <a href="{% url 'invoice_list' %}?customer_filter={{ customer.pk }}" class="btn btn-link btn-sm">Προβολή όλων & Αναλυτικά Φίλτρα &raquo;</a>
+                        </div>
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Αρ. Τιμολογίου</th><th>Ημερομηνία</th><th>Κατάσταση</th><th class="text-end">Ποσό</th><th class="text-center">Ενέργειες</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                 {% for invoice in customer_invoices %}
+                                    <tr>
+                                        <td><a href="{% url 'invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a></td>
+                                        <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
+                                        <td><span class="badge {% if invoice.status == invoice.STATUS_PAID %}bg-success{% elif invoice.status == invoice.STATUS_ISSUED %}bg-primary{% elif invoice.status == invoice.STATUS_CANCELLED %}bg-danger{% else %}bg-secondary{% endif %}">{{ invoice.get_status_display }}</span></td>
+                                        <td class="text-end">{{ invoice.total_amount|floatformat:2 }} €</td>
+                                        <td class="text-center"><a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a></td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="5" class="text-center p-4">Δεν βρέθηκαν τιμολόγια.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+    
+                {# --- ΚΑΡΤΕΛΑ ΔΕΛΤΙΩΝ ΑΠΟΣΤΟΛΗΣ (ΔΙΟΡΘΩΜΕΝΗ) --- #}
+                <div class="tab-pane fade" id="delivery-notes-tab-pane" role="tabpanel" aria-labelledby="delivery-notes-tab" tabindex="0">
+                    <div class="table-responsive mt-3">
+                        <div class="text-end mb-2">
+                            <a href="{% url 'delivery_note_list' %}?customer_filter={{ customer.pk }}" class="btn btn-link btn-sm">Προβολή όλων & Αναλυτικά Φίλτρα &raquo;</a>
+                        </div>
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Αρ. Δ.Α.</th><th>Ημερομηνία</th><th>Κατάσταση</th><th class="text-center">Ενέργειες</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                 {% for note in customer_delivery_notes %}
+                                    <tr>
+                                        <td><a href="{% url 'delivery_note_detail' note.pk %}">{{ note.delivery_note_number }}</a></td>
+                                        <td>{{ note.issue_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <span class="badge {% if note.status == 'DELIVERED' %}bg-success{% elif note.status == 'SHIPPED' %}bg-primary{% elif note.status == 'PREPARING' %}bg-warning text-dark{% elif note.status == 'CANCELLED' %}bg-danger{% else %}bg-secondary{% endif %}">{{ note.get_status_display }}</span>
+                                        </td>
+                                        <td class="text-center"><a href="{% url 'delivery_note_detail' note.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a></td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="4" class="text-center p-4">Δεν βρέθηκαν Δελτία Αποστολής.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,254 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single {
+        height: calc(1.5em + .5rem + 2px); /* sm size */
+        padding: .25rem .5rem;
+        font-size: .875rem;
+        border-radius: .2rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 1.5;
+        padding-left: 0;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: calc(1.5em + .5rem);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-card-list me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'payment_create' %}" class="btn btn-success me-2">
+                <i class="bi bi-plus-circle-dotted"></i> Προσθήκη Νέας Πληρωμής
+            </a>
+            <a href="{% url 'export_payments_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-filter me-1"></i> Φίλτρα Αναζήτησης Πληρωμών</div>
+        <div class="card-body">
+            <form method="get" action="{% url 'all_payments_list' %}" id="all-payments-filter-form">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label for="q_filter" class="form-label form-label-sm">Αναζήτηση (Αρ. Απόδ./Αναφ., Σημ.):</label>
+                        <input type="text" name="q" id="q_filter" value="{{ query_text|default:'' }}" class="form-control form-control-sm" placeholder="Κείμενο αναζήτησης...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="customer_filter" class="form-label form-label-sm">Πελάτης:</label>
+                        <select name="customer_filter" id="customer_filter" class="form-select form-select-sm select2-field">
+                            <option value="">Όλοι οι πελάτες</option>
+                            {% for customer in customers_for_filter %}
+                                <option value="{{ customer.pk }}" {% if customer_filter_id == customer.pk %}selected{% endif %}>
+                                    {{ customer }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="status_filter" class="form-label form-label-sm">Κατάσταση:</label>
+                        <select name="status_filter" id="status_filter" class="form-select form-select-sm">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Όλες</option>
+                            {% for value, display_text in payment_status_choices %}
+                                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ display_text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mt-2">
+                        <label for="method_filter" class="form-label form-label-sm">Τρόπος Πληρωμής:</label>
+                        <select name="method_filter" id="method_filter" class="form-select form-select-sm">
+                            <option value="all" {% if method_filter == 'all' %}selected{% endif %}>Όλοι οι τρόποι</option>
+                             {% for value, display_text in payment_method_choices %}
+                                <option value="{{ value }}" {% if method_filter == value %}selected{% endif %}>{{ display_text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label form-label-sm fw-bold">Γρήγορες Επιλογές Ημερομηνίας Πληρωμής:</label>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group">
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="today">Σήμερα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_week">Αυτή την Εβδομάδα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_month">Αυτόν τον Μήνα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="last_month">Προηγ. Μήνα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_year">Αυτό το Έτος</button>
+                    </div>
+                </div>
+                
+                <div class="row g-2 align-items-end mt-1">
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label form-label-sm">Ημερ. Πληρωμής Από:</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ date_from_value|default:'' }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label form-label-sm">Ημερ. Πληρωμής Έως:</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ date_to_value|default:'' }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i> Αναζήτηση</button>
+                        <a href="{% url 'all_payments_list' %}" class="btn btn-outline-secondary btn-sm ms-2"><i class="bi bi-eraser me-1"></i> Καθαρισμός</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-table me-1"></i>
+            Πληρωμές ({{ payments.paginator.count }})
+            {% if payments.paginator.count > 0 %}
+                / Σύνολο Ενεργών (με βάση τα φίλτρα): <span class="fw-bold">{{ total_active_payments_amount|floatformat:2 }}€</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm" style="font-size: 0.875em;">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Αρ. Απόδ.</th>
+                                <th scope="col">Ημερ. Πληρωμής</th>
+                                <th scope="col">Πελάτης</th>
+                                <th scope="col" class="text-end">Ποσό (€)</th>
+                                <th scope="col">Τρόπος Πληρωμής</th>
+                                <th scope="col" class="text-center">Κατάσταση</th>
+                                <th scope="col">Σχετ. Τιμολόγια</th>
+                                <th scope="col">Σημ./Λόγος Ακύρ.</th>
+                                <th scope="col" class="text-center">Ενέργειες</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                <tr class="searchable-row has-context-menu {% if payment.status == payment.STATUS_CANCELLED %}table-secondary text-muted text-decoration-line-through{% endif %}" data-id="{{ payment.pk }}" data-type="payment">
+                                
+                                    <td>
+                                        <a href="{% url 'view_payment_receipt' payment.pk %}" target="_blank" title="Προβολή Απόδειξης (PDF)">
+                                            <strong>{{ payment.receipt_number|default:"-" }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>{{ payment.payment_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        {% if payment.customer %}
+                                            <a href="{% url 'customer_financial_detail' payment.customer.pk %}">{{ payment.customer|truncatechars:35 }}</a>
+                                        {% else %}[Άγνωστος]{% endif %}
+                                    </td>
+                                    <td class="text-end">{{ payment.amount_paid|floatformat:2 }}</td>
+                                    <td>{{ payment.get_payment_method_display }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if payment.status == payment.STATUS_ACTIVE %}bg-success{% elif payment.status == payment.STATUS_CANCELLED %}bg-danger{% endif %}">
+                                            {{ payment.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% for inv in payment.invoices.all %}
+                                            <a href="{% url 'invoice_detail' inv.pk %}">{{ inv.invoice_number }}</a>{% if not forloop.last %}, {% endif %}
+                                        {% empty %}
+                                            -
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% if payment.status == payment.STATUS_CANCELLED and payment.cancellation_reason %}
+                                            <span class="text-decoration-none d-inline-block" title="{{ payment.cancellation_reason }}">{{ payment.cancellation_reason|truncatechars:30 }}</span>
+                                        {% else %}
+                                            <span title="{{ payment.notes|default:"" }}">{{ payment.notes|default:"-"|truncatechars:30 }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots"></i></button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li><a class="dropdown-item" href="{% url 'view_payment_receipt' payment.pk %}" target="_blank"><i class="bi bi-printer me-2"></i>Απόδειξη</a></li>
+                                                {% if payment.status == payment.STATUS_ACTIVE %}
+                                                    <li><a class="dropdown-item" href="{% url 'payment_edit' payment.pk %}"><i class="bi bi-pencil-square me-2"></i>Επεξεργασία</a></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item text-danger" href="{% url 'payment_cancel' payment.pk %}"><i class="bi bi-x-octagon me-2"></i>Ακύρωση</a></li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include "core/partials/pagination_controls.html" with page_obj=payments %}
+            {% else %}
+                <div class="alert alert-info mb-0" role="alert">
+                    {% if request.GET %}Δεν βρέθηκαν πληρωμές για τα επιλεγμένα κριτήρια.{% else %}Δεν υπάρχουν καταχωρημένες πληρωμές.{% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    if (typeof $('.select2-field').select2 === "function") {
+        $('.select2-field').select2({
+            placeholder: "Επιλογή πελάτη...",
+            allowClear: true,
+            width: '100%' 
+        });
+    }
+
+    $('.quick-date-range').on('click', function() {
+        const rangeType = $(this).data('range');
+        const dateFromInput = $('#date_from');
+        const dateToInput = $('#date_to');
+        const today = new Date();
+        let startDate, endDate;
+        function formatDate(date) {
+            let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
+        switch (rangeType) {
+            case 'today': startDate = endDate = formatDate(today); break;
+            case 'this_week':
+                let firstDay = new Date(today.setDate(today.getDate() - today.getDay() + 1));
+                let lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 7));
+                startDate = formatDate(firstDay);
+                endDate = formatDate(lastDay);
+                break;
+            case 'this_month':
+                startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                endDate = formatDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+                break;
+            case 'last_month':
+                let firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                let lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                startDate = formatDate(firstDayLastMonth);
+                endDate = formatDate(lastDayLastMonth);
+                break;
+            case 'this_year':
+                startDate = formatDate(new Date(today.getFullYear(), 0, 1));
+                endDate = formatDate(new Date(today.getFullYear(), 11, 31));
+                break;
+        }
+        if (startDate && endDate) {
+            dateFromInput.val(startDate);
+            dateToInput.val(endDate);
+        }
+    });
+});
+</script>
+{% endblock extra_js %}

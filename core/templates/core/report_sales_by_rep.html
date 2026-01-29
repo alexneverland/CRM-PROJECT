@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mt-4">{{ title }}</h1>
+        <a href="{% url 'reporting_hub' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Επιστροφή στις Αναφορές</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label for="date_from" class="form-label form-label-sm">Από Ημερομηνία:</label>
+                    <input type="date" name="date_from" id="date_from" value="{{ date_from_value }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <label for="date_to" class="form-label form-label-sm">Έως Ημερομηνία:</label>
+                    <input type="date" name="date_to" id="date_to" value="{{ date_to_value }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-primary">Προβολή</button>
+                </div>
+            </form>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Πωλητής</th>
+                            <th class="text-center">Πλήθος Τιμολογίων</th>
+                            <th class="text-end">Συνολικός Τζίρος (Καθαρή Αξία, €)</th>
+                            <th class="text-end">Σύνολο Προμηθειών (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in sales_data %}
+                        <tr>
+                            <td>{{ row.sales_rep__user__first_name }} {{ row.sales_rep__user__last_name }}</td>
+                            <td class="text-center">{{ row.invoice_count }}</td>
+                            <td class="text-end fw-bold">{{ row.total_net_sales|floatformat:2 }}</td>
+                            <td class="text-end text-success fw-bold">{{ row.total_commission|floatformat:2|default:"0.00" }}</td>
+                        </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">Δεν βρέθηκαν προμήθειες για την επιλεγμένη περίοδο.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

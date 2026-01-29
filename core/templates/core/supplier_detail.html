@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-truck me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'supplier_edit' supplier.pk %}" class="btn btn-sm btn-primary me-2">
+                <i class="bi bi-pencil-square"></i> Επεξεργασία
+            </a>
+            <form action="{% url 'supplier_delete' supplier.pk %}" method="post" class="delete-form d-inline" data-item-type="τον προμηθευτή" data-item-name="{{ supplier.name|escapejs }}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> Διαγραφή</button>
+            </form>
+            <a href="{% url 'supplier_list' %}" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left-circle"></i> Επιστροφή στη Λίστα</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Στοιχεία Προμηθευτή</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Επωνυμία:</strong> {{ supplier.name }}</p>
+                    <p><strong>Α.Φ.Μ.:</strong> {{ supplier.vat_number|default:"-" }}</p>
+                    <p><strong>Δ.Ο.Υ.:</strong> {{ supplier.doy|default:"-" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Υπεύθυνος Επικοινωνίας:</strong> {{ supplier.contact_person|default:"-" }}</p>
+                    <p><strong>Τηλέφωνο:</strong> {{ supplier.phone|default:"-" }}</p>
+                    <p><strong>Email:</strong> {{ supplier.email|default:"-" }}</p>
+                </div>
+                <div class="col-12 mt-2 pt-2 border-top">
+                    <p><strong>Διεύθυνση:</strong> {{ supplier.address|default:"-" }}, {{ supplier.postal_code|default:"" }} {{ supplier.city|default:"" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+     <div class="card mt-3">
+        <div class="card-header">Σημειώσεις</div>
+        <div class="card-body">
+            {{ supplier.comments|linebreaksbr|default:"Δεν υπάρχουν σημειώσεις." }}
+        </div>
+    </div>
+</div>
+{% endblock %}

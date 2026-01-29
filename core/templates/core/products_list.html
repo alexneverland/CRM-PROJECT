@@ -1,0 +1,95 @@
+{% extends "core/base.html" %}
+
+
+{% block title %}{{ title|default:"Λίστα Προϊόντων" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-box-seam me-2"></i>{{ title|default:"Λίστα Προϊόντων" }}</h1>
+        <div>
+             <a href="{% url 'product_create' %}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-circle me-1"></i> Προσθήκη Νέου Προϊόντος
+            </a>
+            <a href="{% url 'export_products_excel' %}?q={{ request.GET.q|default:'' }}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel"></i> Εξαγωγή σε Excel
+            </a>
+        </div>
+    </div>
+
+    {# Φόρμα Αναζήτησης #}
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" action="{% url 'product_list' %}" class="row g-3 align-items-end">
+                <div class="col-md-10">
+                    <label for="q_filter" class="form-label">Αναζήτηση (Όνομα, Κωδικός, Barcode, Περιγραφή):</label>
+                    <input type="text" name="q" id="q_filter" value="{{ query|default:'' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-search"></i> Αναζήτηση
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {# Πίνακας Προϊόντων #}
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-table me-1"></i>
+            Προϊόντα ({{ products.paginator.count }})
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Όνομα</th>
+                            <th>Κωδικός</th>
+                            <th class="text-end">Απόθεμα</th>
+                            <th class="text-end">Τιμή</th>
+                            <th class="text-center">Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if products %}
+                            {% for product in products %}
+                                <tr class="searchable-row has-context-menu" data-id="{{ product.pk }}" data-type="product">
+                                    <td>
+                                        <a href="{% url 'product_detail' product.pk %}"><strong>{{ product.name }}</strong></a>
+                                        <small class="d-block text-muted">{{ product.description|truncatechars:80 }}</small>
+                                    </td>
+                                    <td>{{ product.code }}</td>
+                                    <td class="text-end stock-quantity-cell">{{ product.stock_quantity|floatformat:2 }} {{ product.get_unit_of_measurement_display }}</td>
+                                    <td class="text-end">{{ product.price|floatformat:2 }} €</td>
+                                    <td class="text-center">
+                                        <a href="{% url 'product_edit' pk=product.pk %}" class="btn btn-sm btn-outline-primary" title="Επεξεργασία"><i class="bi bi-pencil"></i></a>
+                                        <form action="{% url 'product_delete' pk=product.pk %}" method="post" class="delete-form d-inline ms-1" data-item-type="το προϊόν" data-item-name="'{{ product.name|escapejs }}'">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Διαγραφή"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                             <tr class="searchable-row">
+                                <td colspan="5" class="text-center p-4">
+                                    {% if query %}
+                                        Δεν βρέθηκαν προϊόντα για την αναζήτηση "{{ query }}".
+                                    {% else %}
+                                        Δεν υπάρχουν προϊόντα.
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {# --- ΠΡΟΣΘΗΚΗ ΣΕΛΙΔΟΠΟΙΗΣΗΣ ΕΔΩ --- #}
+            {% include "core/partials/pagination_controls.html" with page_obj=products %}
+        </div>
+    </div>
+</div>
+{% endblock %}

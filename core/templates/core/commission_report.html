@@ -1,0 +1,104 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4"><i class="bi bi-currency-dollar me-2"></i>{{ title }}</h1>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-filter me-1"></i>Φίλτρα Αναφοράς</div>
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="sales_rep_filter" class="form-label form-label-sm">Πωλητής:</label>
+                    <select name="sales_rep" id="sales_rep_filter" class="form-select form-select-sm">
+                        <option value="">Όλοι οι πωλητές</option>
+                        {% for rep in all_reps %}
+                            <option value="{{ rep.pk }}" {% if rep_filter_id == rep.pk|stringformat:"s" %}selected{% endif %}>{{ rep }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status_filter" class="form-label form-label-sm">Κατάσταση:</label>
+                    <select name="status" id="status_filter" class="form-select form-select-sm">
+                        <option value="">Όλες</option>
+                        {% for value, text in commission_statuses %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Εφαρμογή</button>
+                </div>
+                <div class="col-md-3 text-end">
+                    <h5 class="mb-0">Σύνολο Ανεξόφλητων: <span class="text-danger">{{ total_unpaid|floatformat:2 }} €</span></h5>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form method="post">
+    {% csrf_token %}
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th><input type="checkbox" id="select-all-commissions"></th>
+                                <th>Πωλητής</th>
+                                <th>Τιμολόγιο</th>
+                                <th class="text-end">Αξία Τιμ/γίου</th>
+                                <th class="text-end">Ποσό Προμήθειας</th>
+                                <th>Κατάσταση</th>
+                                <th>Ημερ. Υπολ/σμού</th>
+                                <th>Ημερ. Πληρωμής</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for comm in commissions %}
+                            <tr>
+                                <td>
+                                    {% if comm.status == comm.Status.UNPAID %}
+                                    <input type="checkbox" class="commission-checkbox" name="commission_ids" value="{{ comm.id }}">
+                                    {% endif %}
+                                </td>
+                                <td>{{ comm.sales_rep }}</td>
+                                <td><a href="{% url 'invoice_detail' comm.invoice.pk %}">{{ comm.invoice.invoice_number }}</a></td>
+                                <td class="text-end">{{ comm.invoice.subtotal|floatformat:2 }} €</td>
+                                <td class="text-end fw-bold">{{ comm.calculated_amount|floatformat:2 }} €</td>
+                                <td><span class="badge {% if comm.status == comm.Status.PAID %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ comm.get_status_display }}</span></td>
+                                <td>{{ comm.calculation_date|date:"d/m/Y" }}</td>
+                                <td>{{ comm.paid_date|date:"d/m/Y"|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8" class="text-center p-4">Δεν βρέθηκαν προμήθειες με βάση τα επιλεγμένα κριτήρια.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if commissions %}
+                <button type="submit" class="btn btn-success mt-3"><i class="bi bi-check-circle-fill me-1"></i>Σήμανση Επιλεγμένων ως Εξοφλημένες</button>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all-commissions');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            document.querySelectorAll('.commission-checkbox').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

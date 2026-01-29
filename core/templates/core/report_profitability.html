@@ -1,0 +1,143 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single { height: calc(1.5em + .5rem + 2px); padding: .25rem .5rem; font-size: .875rem; border-radius: .2rem; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 1.5; padding-left: 0; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .5rem); }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mt-4">{{ title }}</h1>
+        <a href="{% url 'reporting_hub' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Επιστροφή</a>
+    </div>
+    
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i>Αυτή η αναφορά υπολογίζει το μικτό κέρδος μόνο για τα προϊόντα για τα οποία έχει καταχωρηθεί 'Τιμή Κόστους'.
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <form method="get" class="g-3">
+                <div class="row align-items-end">
+                    <div class="col-md-5 mb-2">
+                        <label for="product_filter" class="form-label form-label-sm">Επιλογή Προϊόντος:</label>
+                        <select name="product" id="product_filter" class="form-select form-select-sm select2-field">
+                            <option value="">Όλα τα Προϊόντα</option>
+                            {% for p in all_products %}
+                                <option value="{{ p.pk }}" {% if product_id_value == p.pk %}selected{% endif %}>{{ p.name }} ({{ p.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <label class="form-label form-label-sm fw-bold">Γρήγορες Επιλογές Ημερομηνίας:</label>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary quick-date-range" data-range="this_month">Αυτόν τον Μήνα</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary quick-date-range" data-range="last_month">Προηγ. Μήνα</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary quick-date-range" data-range="this_year">Αυτό το Έτος</button>
+                    </div>
+                </div>
+                <div class="row g-2 align-items-end mt-1">
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label form-label-sm">Από Ημερομηνία:</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ date_from_value }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label form-label-sm">Έως Ημερομηνία:</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ date_to_value }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" class="btn btn-sm btn-primary">Προβολή</button>
+                        <a href="{% url 'report_profitability' %}" class="btn btn-sm btn-outline-secondary">Καθαρισμός</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Προϊόν</th>
+                            <th class="text-center">Ποσότητα Πωλήσεων</th>
+                            <th class="text-end">Συνολικός Τζίρος (€)</th>
+                            <th class="text-end">Συνολικό Κόστος (€)</th>
+                            <th class="text-end">Μικτό Κέρδος (€)</th>
+                            <th class="text-end">Περιθώριο Κέρδους (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in profit_data %}
+                        <tr>
+                            <td>{{ row.product__name }} <small class="text-muted">({{ row.product__code }})</small></td>
+                            <td class="text-center">{{ row.total_quantity|floatformat:2 }}</td>
+                            <td class="text-end">{{ row.total_revenue|floatformat:2 }}</td>
+                            <td class="text-end text-secondary">{{ row.total_cost|floatformat:2 }}</td>
+                            <td class="text-end fw-bold text-success">{{ row.total_profit|floatformat:2 }}</td>
+                            <td class="text-end {% if row.profit_margin < 0 %}text-danger fw-bold{% endif %}">{{ row.profit_margin|floatformat:2 }}%</td>
+                        </tr>
+                        {% empty %}
+                            <tr><td colspan="6" class="text-center">Δεν βρέθηκαν πωλήσεις με καταχωρημένο κόστος για τα επιλεγμένα κριτήρια.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if (typeof $('.select2-field').select2 === "function") {
+            $('.select2-field').select2({
+                placeholder: "Επιλογή Προϊόντος...",
+                allowClear: true,
+                width: '100%'
+            });
+        }
+
+        $('.quick-date-range').on('click', function() {
+            const rangeType = $(this).data('range');
+            const dateFromInput = $('#date_from');
+            const dateToInput = $('#date_to');
+            const today = new Date();
+            let startDate, endDate;
+            function formatDate(date) {
+                let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            }
+
+            if (rangeType === 'this_month') {
+                startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                endDate = formatDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+            } else if (rangeType === 'last_month') {
+                let firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                let lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                startDate = formatDate(firstDayLastMonth);
+                endDate = formatDate(lastDayLastMonth);
+            } else if (rangeType === 'this_year') {
+                startDate = formatDate(new Date(today.getFullYear(), 0, 1));
+                endDate = formatDate(new Date(today.getFullYear(), 11, 31));
+            }
+
+            dateFromInput.val(startDate);
+            dateToInput.val(endDate);
+        });
+    });
+</script>
+{% endblock %}

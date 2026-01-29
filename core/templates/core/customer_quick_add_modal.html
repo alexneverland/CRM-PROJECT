@@ -1,0 +1,115 @@
+{# core/templates/core/customer_quick_add_modal.html #}
+
+<div id="customerQuickAddModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>➕ Προσθήκη Νέου Πελάτη</h2>
+        <form id="quick-add-customer-form">
+            {% csrf_token %}
+            {# --- Βασικά Στοιχεία --- #}
+            <p>
+                <label for="id_quick_first_name">Όνομα:*</label>
+                <input type="text" id="id_quick_first_name" name="first_name" required placeholder="π.χ. Γιάννης">
+            </p>
+            <p>
+                <label for="id_quick_last_name">Επώνυμο:*</label>
+                <input type="text" id="id_quick_last_name" name="last_name" required placeholder="π.χ. Παπαδόπουλος">
+            </p>
+            <p>
+                <label for="id_quick_company_name">Επωνυμία Εταιρείας:</label>
+                <input type="text" id="id_quick_company_name" name="company_name" placeholder="π.χ. ΑΦΟΙ Παπαδόπουλοι Ο.Ε.">
+            </p>
+            <p>
+                <label for="id_quick_email">Email:</label>
+                <input type="email" id="id_quick_email" name="email" placeholder="π.χ. info@example.com">
+            </p>
+            <p>
+                <label for="id_quick_phone">Τηλέφωνο:</label>
+                <input type="tel" id="id_quick_phone" name="phone" placeholder="π.χ. 2310-123456">
+            </p>
+
+            {# --- Διεύθυνση & ΑΦΜ --- #}
+            <p>
+                <label for="id_quick_address">Διεύθυνση:</label>
+                <input type="text" id="id_quick_address" name="address" placeholder="π.χ. Τσιμισκή 10">
+            </p>
+            <p>
+                <label for="id_quick_city">Πόλη:</label>
+                <input type="text" id="id_quick_city" name="city" placeholder="π.χ. Θεσσαλονίκη">
+            </p>
+            <p>
+                <label for="id_quick_postal_code">Ταχυδρομικός Κώδικας:</label>
+                <input type="text" id="id_quick_postal_code" name="postal_code" placeholder="π.χ. 54621">
+            </p>
+            <p>
+                <label for="id_quick_vat_number">Α.Φ.Μ.:</label>
+                <input type="text" id="id_quick_vat_number" name="vat_number" placeholder="π.χ. 123456789">
+            </p>
+            <p>
+                <label for="id_quick_doy">Δ.Ο.Υ.:</label>
+                <input type="text" id="id_quick_doy" name="doy" placeholder="π.χ. ΔΟΥ Α΄ Θεσσαλονίκης">
+            </p>
+
+            {# --- Στοιχεία Αποστολής --- #}
+            <p>
+                <label for="id_quick_shipping_address">Διεύθυνση Αποστολής:</label>
+                <input type="text" id="id_quick_shipping_address" name="shipping_address" placeholder="π.χ. Παπάγου 20">
+            </p>
+            <p>
+                <label for="id_quick_shipping_city">Πόλη Αποστολής:</label>
+                <input type="text" id="id_quick_shipping_city" name="shipping_city" placeholder="π.χ. Καλαμαριά">
+            </p>
+            <p>
+                <label for="id_quick_shipping_postal_code">Ταχ. Κώδικας Αποστολής:</label>
+                <input type="text" id="id_quick_shipping_postal_code" name="shipping_postal_code" placeholder="π.χ. 55133">
+            </p>
+
+            {# --- Υπεύθυνος Επικοινωνίας --- #}
+            <p>
+                <label for="id_quick_contact_person_name">Όνομα Επικοινωνίας:</label>
+                <input type="text" id="id_quick_contact_person_name" name="contact_person_name" placeholder="π.χ. Μαρία Σούπερ">
+            </p>
+            <p>
+                <label for="id_quick_contact_person_phone">Τηλ. Επικοινωνίας:</label>
+                <input type="tel" id="id_quick_contact_person_phone" name="contact_person_phone" placeholder="π.χ. 6970-123456">
+            </p>
+            <p>
+                <label for="id_quick_contact_person_email">Email Επικοινωνίας:</label>
+                <input type="email" id="id_quick_contact_person_email" name="contact_person_email" placeholder="π.χ. maria@example.com">
+            </p>
+
+            {# --- Οικονομικά Στοιχεία --- #}
+            <p>
+                <label for="id_quick_payment_method">Τρόπος Πληρωμής:</label>
+                <select id="id_quick_payment_method" name="payment_method">
+                    {% for value, display_text in PAYMENT_METHOD_CHOICES_FOR_MODAL %} {# Θα χρειαστεί να περάσεις τις choices στο context του modal ή να τις hardcode-άρεις εδώ προσωρινά #}
+                        <option value="{{ value }}">{{ display_text }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <label for="id_quick_payment_terms">Όροι Πληρωμής:</label>
+                <select id="id_quick_payment_terms" name="payment_terms">
+                     {% for value, display_text in PAYMENT_TERMS_CHOICES_FOR_MODAL %} {# Ομοίως #}
+                        <option value="{{ value }}">{{ display_text }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>
+                <label for="id_quick_credit_limit">Πιστωτικό Όριο (€):</label>
+                <input type="number" id="id_quick_credit_limit" name="credit_limit" step="0.01" placeholder="0.00" value="0.00">
+            </p>
+
+            {# --- Σχόλια --- #}
+            <p>
+                <label for="id_quick_comments">Σχόλια:</label>
+                <textarea id="id_quick_comments" name="comments" rows="3" placeholder="Πρόσθετες σημειώσεις για τον πελάτη..."></textarea>
+            </p>
+
+            <div id="quick-add-errors" style="margin-top: 10px; color: red;">
+                {# Εδώ θα εμφανιστούν τα λάθη από την AJAX response #}
+            </div>
+            <button type="submit" class="button">Αποθήκευση Νέου Πελάτη</button>
+        </form>
+    </div>
+</div>

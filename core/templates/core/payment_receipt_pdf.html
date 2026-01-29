@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Απόδειξη Είσπραξης - {{ payment.receipt_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm; /* Περιθώρια σελίδας */
+        }
+        body {
+            font-family: "DejaVu Sans", "Arial", sans-serif; /* DejaVu Sans για καλή υποστήριξη ελληνικών */
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+            font-weight: bold;
+        }
+        .company-details, .customer-details {
+            margin-bottom: 20px;
+            width: 48%;
+            display: inline-block; /* Για να είναι δίπλα-δίπλα αν χρειαστεί */
+            vertical-align: top;
+        }
+        .company-details {
+            text-align: left;
+        }
+        .customer-details {
+            text-align: right; /* Ή left αν προτιμάς */
+        }
+        .company-details p, .customer-details p {
+            margin: 2px 0;
+            font-size: 10pt;
+        }
+        .receipt-info {
+            margin-bottom: 25px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .receipt-info p {
+            margin: 5px 0;
+        }
+        .payment-details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            margin-bottom: 25px;
+        }
+        .payment-details-table th, .payment-details-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        .payment-details-table th {
+            background-color: #e9e9e9;
+            font-weight: bold;
+        }
+        .total-amount {
+            margin-top: 20px;
+            text-align: right;
+            font-size: 14pt;
+            font-weight: bold;
+        }
+        .footer-notes {
+            margin-top: 40px;
+            font-size: 9pt;
+            text-align: center;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+        .signature-area {
+            margin-top: 50px;
+            text-align: right; /* ή όπου θέλεις την υπογραφή */
+        }
+        .signature-area p {
+            margin-bottom: 40px; /* Χώρος για υπογραφή */
+        }
+
+        .label { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ΑΠΟΔΕΙΞΗ ΕΙΣΠΡΑΞΗΣ</h1>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 20px; border: none;">
+            <tr>
+                <td style="width: 50%; vertical-align: top; border: none;">
+                    <div class="company-details">
+                        <p><span class="label">{{ company_info.NAME }}</span></p>
+                        <p>{{ company_info.ADDRESS }}</p>
+                        <p><span class="label">Τηλ:</span> {{ company_info.PHONE }}</p>
+                        <p><span class="label">Email:</span> {{ company_info.EMAIL }}</p>
+                        <p><span class="label">Α.Φ.Μ.:</span> {{ company_info.VAT_NUMBER }} - <span class="label">Δ.Ο.Υ.:</span> {{ company_info.DOY }}</p>
+                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; text-align: right; border: none;">
+                    <div class="receipt-info-simple">
+                        <p><span class="label">Αριθμός Απόδειξης:</span> {{ payment.receipt_number }}</p>
+                        <p><span class="label">Ημερομηνία Έκδοσης:</span> {{ payment.payment_date|date:"d/m/Y" }}</p>
+                         {% if payment.value_date %}
+                            <p><span class="label">Ημερομηνία Value Date:</span> {{ payment.value_date|date:"d/m/Y" }}</p>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="customer-details" style="width:100%; text-align:left; margin-bottom:25px;">
+            <h3>ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ</h3>
+            <p><span class="label">Επωνυμία/Όνομα:</span> {{ payment.customer.company_name|default:payment.customer.get_full_name }}</p>
+            {% if payment.customer.vat_number %}<p><span class="label">Α.Φ.Μ.:</span> {{ payment.customer.vat_number }}</p>{% endif %}
+            {% if payment.customer.address %}<p><span class="label">Διεύθυνση:</span> {{ payment.customer.address }}, {{ payment.customer.city }} {{ payment.customer.postal_code }}</p>{% endif %}
+            {% if payment.customer.phone %}<p><span class="label">Τηλέφωνο:</span> {{ payment.customer.phone }}</p>{% endif %}
+        </div>
+
+        <table class="payment-details-table">
+            <thead>
+                <tr>
+                    <th>Περιγραφή</th>
+                    <th style="text-align: right;">Ποσό</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        Πληρωμή
+                        {% if payment.order %}
+                            έναντι παραγγελίας <a href="#">{{ payment.order.order_number }}</a>
+                            {# Στο PDF το link δεν θα είναι ενεργό, αλλά μπορείς να το εμφανίσεις αν θέλεις #}
+                        {% endif %}
+                        <br>
+                        <span class="label">Τρόπος Πληρωμής:</span> {{ payment.get_payment_method_display }}
+                        {% if payment.reference_number %}
+                            <br><span class="label">Εξωτ. Αρ. Αναφοράς:</span> {{ payment.reference_number }}
+                        {% endif %}
+                        {% if payment.notes %}
+                            <br><span class="label">Σημειώσεις:</span> {{ payment.notes|linebreaksbr }}
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">{{ payment.amount_paid|floatformat:2 }} €</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total-amount">
+            <p><strong>Συνολικό Ποσό Είσπραξης: {{ payment.amount_paid|floatformat:2 }} €</strong></p>
+        </div>
+
+        {% if payment.recorded_by %}
+        <p style="font-size:9pt; margin-top: 30px;">Καταχώρηση από: {{ payment.recorded_by.username }} στις {{ payment.created_at|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+
+        <div class="signature-area">
+            <p>Για την είσπραξη,</p>
+            <p>_________________________</p>
+            <p>({{ company_info.NAME }})</p>
+        </div>
+
+        <div class="footer-notes">
+            <p>Σας ευχαριστούμε.</p>
+            </div>
+    </div>
+</body>
+</html>

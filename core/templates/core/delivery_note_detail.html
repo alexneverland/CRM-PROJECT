@@ -1,0 +1,123 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-truck me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            
+            {# Κουμπί Επεξεργασίας: Εμφανίζεται μόνο αν το ΔΑ δεν είναι ακυρωμένο ή παραδομένο #}
+            {% if note.status != note.Status.CANCELLED and note.status != note.Status.DELIVERED %}
+            <a href="{% url 'delivery_note_edit' note.pk %}" class="btn btn-sm btn-primary me-2">
+                <i class="bi bi-pencil-square"></i> Επεξεργασία
+            </a>
+            <form action="{% url 'delivery_note_cancel' note.pk %}" method="post" class="d-inline delete-form" data-item-name="{{ note.delivery_note_number }}" data-item-type="το Δελτίο Αποστολής">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger me-2"><i class="bi bi-x-circle"></i> Ακύρωση</button>
+            </form>
+            {% endif %}
+
+            {# Κουμπί Τιμολόγησης #}
+            {% if note.customer.is_branch and not note.invoice and note.status != note.Status.CANCELLED %}
+                <form action="{% url 'create_invoice_from_dn' note.pk %}" method="post" class="d-inline ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-text-fill"></i> Τιμολόγηση στο Κεντρικό</button>
+                </form>
+            {% elif note.invoice %}
+                 <a href="{% url 'invoice_detail' note.invoice.pk %}" class="btn btn-sm btn-info ms-2"><i class="bi bi-check-circle"></i> Προβολή Τιμολογίου</a>
+            {% endif %}
+            
+            {# Δυναμικό Κουμπί PDF #}
+            <a href="{% if note.status == note.Status.CANCELLED %}{% url 'delivery_note_cancellation_pdf' note.pk %}{% else %}{% url 'delivery_note_pdf' note.pk %}{% endif %}" class="btn btn-sm btn-info ms-2" target="_blank">
+                <i class="bi bi-printer"></i>
+                {% if note.status == note.Status.CANCELLED %}
+                    Εκτύπωση Ακυρωτικού
+                {% else %}
+                    PDF
+                {% endif %}
+            </a>
+            <a href="{% url 'delivery_note_list' %}" class="btn btn-sm btn-outline-secondary ms-2"><i class="bi bi-arrow-left-circle"></i> Επιστροφή στη Λίστα</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">Στοιχεία Παραστατικού</div>
+                <div class="card-body">
+                    <p><strong>Πελάτης Χρέωσης:</strong> <a href="{% url 'customer_detail' note.customer.parent.pk|default:note.customer.pk %}">{{ note.customer.parent|default:note.customer }}</a></p>
+                    <p><strong>Σχετική Παραγγελία:</strong>
+                        {% if note.order %}
+                            <a href="{% url 'order_detail' note.order.pk %}">{{ note.order.order_number }}</a>
+                        {% else %}
+                            <span class="text-muted">Αυτόνομη Διακίνηση</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Ημερομηνία Έκδοσης:</strong> {{ note.issue_date|date:"d/m/Y" }}</p>
+                    <p><strong>Κατάσταση:</strong> 
+                        <span class="badge
+                            {% if note.status == 'DELIVERED' %}bg-success
+                            {% elif note.status == 'SHIPPED' %}bg-primary
+                            {% elif note.status == 'PREPARING' %}bg-warning text-dark
+                            {% elif note.status == 'CANCELLED' %}bg-danger
+                            {% else %}bg-secondary
+                            {% endif %}
+                        ">{{ note.get_status_display }}</span>
+                    </p>
+                     <p><strong>Σκοπός Διακίνησης:</strong> {{ note.get_purpose_display }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">Στοιχεία Αποστολής & Μεταφοράς</div>
+                <div class="card-body">
+                    <p><strong>Παραλήπτης:</strong> {{ note.shipping_name|default:"-" }}</p>
+                    <p><strong>Διεύθυνση:</strong> {{ note.shipping_address|default:"-" }}</p>
+                    <p><strong>Πόλη/Τ.Κ.:</strong> {{ note.shipping_city|default:"-" }}, {{ note.shipping_postal_code|default:"" }}</p>
+                    <p><strong>ΑΦΜ Παραλήπτη:</strong> {{ note.shipping_vat_number|default:"-" }}</p>
+                    <hr>
+                    <p><strong>Όχημα (Πινακίδα):</strong> {{ note.license_plate|default:"-" }}</p>
+                    <p><strong>Μεταφορέας:</strong> {{ note.carrier|default:"-" }}</p>
+                    <p><strong>Tracking #:</strong> {{ note.tracking_number|default:"-" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-2">
+        <div class="card-header"><h5 class="mb-0">Είδη Αποστολής</h5></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Περιγραφή</th>
+                            <th class="text-center">Ποσότητα</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in note.items.all %}
+                        <tr>
+                            <td class="ps-3">{{ item.description }}</td>
+                            <td class="text-center">{{ item.quantity|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if note.notes %}
+    <div class="card mt-3">
+        <div class="card-header">Σημειώσεις</div>
+        <div class="card-body">
+            {{ note.notes|linebreaksbr }}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

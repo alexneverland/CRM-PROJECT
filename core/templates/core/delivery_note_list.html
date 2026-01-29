@@ -1,0 +1,206 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single { height: calc(1.5em + .5rem + 2px); padding: .25rem .5rem; font-size: .875rem; border-radius: .2rem; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 1.5; padding-left: 0; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .5rem); }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-truck me-2"></i>{{ title }}</h1>
+        <a href="{% url 'standalone_delivery_note_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Νέο Αυτόνομο Δ.Α.</a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-filter"></i> Φίλτρα Αναζήτησης</div>
+        <div class="card-body">
+            <form method="get" action="{% url 'delivery_note_list' %}">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label for="q_filter" class="form-label form-label-sm">Αναζήτηση:</label>
+                        <input type="text" name="q" id="q_filter" value="{{ query_text|default:'' }}" class="form-control form-control-sm" placeholder="Αρ. ΔΑ, Πελάτης, Παραλήπτης...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="customer_filter" class="form-label form-label-sm">Πελάτης:</label>
+                        <select name="customer_filter" id="customer_filter" class="form-select form-select-sm select2-field">
+                            <option value="">Όλοι οι πελάτες</option>
+                            {% for c in customers_for_filter %}
+                                <option value="{{ c.pk }}" {% if customer_filter_id == c.pk %}selected{% endif %}>{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="status_filter" class="form-label form-label-sm">Κατάσταση Δ.Α.:</label>
+                        <select name="status_filter" id="status_filter" class="form-select form-select-sm">
+                            <option value="">Όλες</option>
+                            {% for val, text in delivery_note_statuses %}
+                                <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label form-label-sm fw-bold">Γρήγορες Επιλογές Ημερομηνίας:</label>
+                    <div class="btn-group btn-group-sm flex-wrap" role="group">
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="today">Σήμερα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_week">Αυτή την Εβδομάδα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_month">Αυτόν τον Μήνα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="last_month">Προηγ. Μήνα</button>
+                        <button type="button" class="btn btn-outline-secondary quick-date-range" data-range="this_year">Αυτό το Έτος</button>
+                    </div>
+                </div>
+
+                <div class="row g-2 align-items-end mt-1">
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label form-label-sm">Από Ημερομηνία:</label>
+                        <input type="date" name="date_from" id="date_from" value="{{ date_from_value|default:'' }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label form-label-sm">Έως Ημερομηνία:</label>
+                        <input type="date" name="date_to" id="date_to" value="{{ date_to_value|default:'' }}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-md-6 text-end">
+                         <button type="submit" class="btn btn-primary btn-sm">Αναζήτηση</button>
+                         <a href="{% url 'delivery_note_list' %}" class="btn btn-outline-secondary btn-sm">Καθαρισμός</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Αρ. Δ.Α.</th>
+                            <th>Ημερομηνία</th>
+                            <th>Πελάτης / Παραλήπτης</th>
+                            <th>Σχετική Παραγγελία</th>
+                            <th class="text-center">Κατάσταση Δ.Α.</th>
+                            <th class="text-center">Τιμολογήθηκε</th>
+                            <th class="text-center">Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in notes %}
+                        <tr class="searchable-row has-context-menu" data-id="{{ note.pk }}" data-type="delivery_note">
+                            <td><strong><a href="{% url 'delivery_note_detail' note.pk %}">{{ note.delivery_note_number }}</a></strong></td>
+                            <td>{{ note.issue_date|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if note.customer.is_branch %}
+                                    {{ note.shipping_name|default:note.customer.company_name }} <small class="text-muted d-block">Κεντρικό: {{ note.customer.parent }}</small>
+                                {% else %}
+                                    {{ note.customer }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if note.order %}
+                                    <a href="{% url 'order_detail' note.order.pk %}">{{ note.order.order_number }}</a>
+                                {% else %}
+                                    <span class="text-muted">Αυτόνομο</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge
+                                    {% if note.status == 'DELIVERED' %}bg-success
+                                    {% elif note.status == 'SHIPPED' %}bg-primary
+                                    {% elif note.status == 'PREPARING' %}bg-warning text-dark
+                                    {% elif note.status == 'CANCELLED' %}bg-danger
+                                    {% else %}bg-secondary
+                                    {% endif %}
+                                ">{{ note.get_status_display }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if note.invoice %}
+                                    <a href="{% url 'invoice_detail' note.invoice.pk %}"><span class="badge bg-success">Ναι</span></a>
+                                {% else %}
+                                    <span class="badge bg-secondary">Όχι</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'delivery_note_detail' note.pk %}" class="btn btn-sm btn-outline-info" title="Προβολή"><i class="bi bi-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center p-4">Δεν βρέθηκαν Δελτία Αποστολής με βάση τα κριτήρια.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% include "core/partials/pagination_controls.html" with page_obj=notes %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        if (typeof $('.select2-field').select2 === "function") {
+            $('.select2-field').select2({
+                placeholder: "Επιλογή...",
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        
+        // --- JAVASCRIPT ΓΙΑ ΤΑ ΚΟΥΜΠΙΑ ΗΜΕΡΟΜΗΝΙΩΝ ---
+        $('.quick-date-range').on('click', function() {
+            const rangeType = $(this).data('range');
+            const dateFromInput = $('#date_from');
+            const dateToInput = $('#date_to');
+            const today = new Date();
+            let startDate, endDate;
+            function formatDate(date) {
+                let d = new Date(date), month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                return [year, month, day].join('-');
+            }
+            switch (rangeType) {
+                case 'today': startDate = endDate = formatDate(today); break;
+                case 'this_week':
+                    let firstDay = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)));
+                    let lastDay = new Date(firstDay);
+                    lastDay.setDate(lastDay.getDate() + 6);
+                    startDate = formatDate(firstDay);
+                    endDate = formatDate(lastDay);
+                    break;
+                case 'this_month':
+                    startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1));
+                    endDate = formatDate(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+                    break;
+                case 'last_month':
+                    let firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    let lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                    startDate = formatDate(firstDayLastMonth);
+                    endDate = formatDate(lastDayLastMonth);
+                    break;
+                case 'this_year':
+                    startDate = formatDate(new Date(today.getFullYear(), 0, 1));
+                    endDate = formatDate(new Date(today.getFullYear(), 11, 31));
+                    break;
+            }
+            if (startDate && endDate) {
+                dateFromInput.val(startDate);
+                dateToInput.val(endDate);
+            }
+        });
+    });
+</script>
+{% endblock extra_js %}

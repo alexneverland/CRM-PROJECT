@@ -1,0 +1,84 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title|default:"Λίστα Χρηστών" }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-people-fill me-2"></i>{{ title }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{% url 'user_create_view' %}" class="btn btn-primary" id="add-new-user-btn"> 
+                <i class="bi bi-person-plus-fill me-1"></i> Προσθήκη Νέου Χρήστη 
+            </a>
+        </div>
+    </div>
+
+    {% if users %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-table me-1"></i>
+                {# ΑΛΛΑΓΗ ΕΔΩ για να δείχνει το συνολικό πλήθος χρηστών #}
+                Χρήστες ({{ users.paginator.count }}) 
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Username</th>
+                                <th scope="col">Ονοματεπώνυμο</th>
+                                <th scope="col">Email</th>
+                                <th scope="col" class="text-center">Staff</th>
+                                <th scope="col" class="text-center">Active</th>
+                                <th scope="col" class="text-center">Superuser</th>
+                                <th scope="col" class="text-center">Ενέργειες</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u_user in users %} {# Ο βρόχος παραμένει ίδιος #}
+                                <tr>
+                                    <td><strong>{{ u_user.username }}</strong></td>
+                                    <td>{{ u_user.get_full_name|default:"-" }}</td>
+                                    <td>{{ u_user.email|default:"-" }}</td>
+                                    <td class="text-center">
+                                        {% if u_user.is_staff %}
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                        {% else %}
+                                            <i class="bi bi-x-circle-fill text-secondary"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if u_user.is_active %}
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                        {% else %}
+                                            <i class="bi bi-x-circle-fill text-secondary"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if u_user.is_superuser %}
+                                            <i class="bi bi-check-circle-fill text-danger"></i>
+                                        {% else %}
+                                            <i class="bi bi-x-circle-fill text-secondary"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'user_edit_view' u_user.pk %}" class="btn btn-sm btn-outline-primary" title="Επεξεργασία Χρήστη">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {# --- ΠΡΟΣΘΗΚΗ ΣΕΛΙΔΟΠΟΙΗΣΗΣ ΕΔΩ --- #}
+                {% include "core/partials/pagination_controls.html" with page_obj=users %}
+
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-3">Δεν βρέθηκαν χρήστες.</div>
+    {% endif %}
+</div>
+{% endblock content %}
